@@ -375,7 +375,7 @@ function rewriteLinks(text) {
 }
 
 function convertPage(text, page) {
-  text = text.replace(/\r\n/g, '\n');
+  text = text.replace(/\r\n?/g, '\n');
   text = resolveIncludes(text, page);
   text = convertFrontmatter(text);
   text = convertBlocks(text);
@@ -383,7 +383,7 @@ function convertPage(text, page) {
   text = rewriteLinks(text);
   const leftovers = text.match(/<(Tabs>|Tab\s|PluginTierLabel|PluginBadge|BadgesHeader|Note>|Checklist|ImageConfig)/g);
   if (leftovers) warn(`${page}: unconverted ${[...new Set(leftovers.map(s => s.trim()))].join(', ')}`);
-  return text;
+  return text.endsWith('\n') ? text : `${text}\n`;
 }
 
 // ---------------------------------------------------------------------------

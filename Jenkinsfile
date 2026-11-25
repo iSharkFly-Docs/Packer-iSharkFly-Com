@@ -46,7 +46,7 @@ pipeline {
 
         stage('Install') {
             steps {
-                // 只安装文档工具链，不安装 website/ 中旧的 Next.js 依赖
+                // 只安装文档工具链（vitepress、vue、wrangler）
                 sh '''
                     set -eu
                     npm install --prefix . --no-save --no-package-lock --no-audit --no-fund \
