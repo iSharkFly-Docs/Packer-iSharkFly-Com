@@ -1,8 +1,7 @@
 ---
-title: split - Functions - Configuration Language
+title: split function reference
 description: |-
-  The split function produces a list by dividing a given string at all
-  occurrences of a given separator.
+  The `split` function divides the given string according to the specified separator to produce a list. 
 ---
 
 # `split` Function

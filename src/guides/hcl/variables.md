@@ -126,9 +126,9 @@ build {
   ]
   provisioner "shell-local" {
     // Note that for options that are documented as template engines,
-    // we still have to use the golang template engine syntax rather than our
+    // we still have to use the Go template engine syntax rather than our
     // specialized HCL2 variable syntax. This example shows a combination of
-    // an HCL2 variable and the golang template engines built into the
+    // an HCL2 variable and the Go template engines built into the
     // execute_command option
     execute_command  = ["/bin/sh", "-c", "echo ${var.sudo_password}| {{.Vars}} {{.Script}}"]
     environment_vars = ["HELLO_USER=packeruser", "UUID=${build.PackerRunUUID}"]
@@ -145,7 +145,7 @@ build {
 As you can see in the example, you can access your variables directly by
 giving them the `var.` or `local.` prefix. If you want to embed the variables
 in a string, you can do so with the `${}` HCL interpolation syntax. If you are
-using an option that is a template engine, you still need to use the golang
+using an option that is a template engine, you still need to use the Go
 templating engine syntax `{{ .OPTION }}` for those engines.
 
 ## Assigning Variables
@@ -177,15 +177,19 @@ command line variables as strings.
 #### From a file
 
 To persist variable values, create a file and assign variables within
-this file. Create a file named `variables.pkrvars.hcl` with the following
-contents:
+this file. A variable definitions file uses the same basic syntax as Packer language files,
+but consists only of variable name assignments.
 
 ```hcl
 sudo_password = "partyparrot"
 weekday       = "Sunday"
 ```
 
-You tell Packer to use this var file using the `-var-file` command line flag.
+When assigning values in a variable definitions file please make sure to quote any string values,
+wrap list values within brackets `[...]`, and wrap maps within curly-braces `{...}`.
+
+Given a file named `variables.pkrvars.hcl` Packer can be instructed to use the
+variable definitions file by using the `-var-file` command line flag.
 
 ```shellsession
 $ packer build -var-file="variables.pkrvars.hcl" .
@@ -193,8 +197,8 @@ $ packer build -var-file="variables.pkrvars.hcl" .
 
 Packer will automatically load any var file that matches the name
 `*.auto.pkrvars.hcl`, without the need to pass the file via the command line.
-if we rename the above var-file from variables.pkrvars.hcl to
-variables.auto.pkrvars.hcl, then we can run our build simply by calling
+If we rename the above variable definitions file from `variables.pkrvars.hcl` to
+`variables.auto.pkrvars.hcl`, then we can run our build simply by calling
 
 ```shellsession
 $ packer build .
@@ -302,7 +306,7 @@ support for the `us-west-2` region as well:
 
 ```hcl
 variable "amis" {
-  type = map
+  type = map(string)
   default = {
     "us-east-1" = "ami-b374d5a5"
     "us-west-2" = "ami-4b32be2b"

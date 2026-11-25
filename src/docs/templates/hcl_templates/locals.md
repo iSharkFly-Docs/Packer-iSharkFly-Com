@@ -1,43 +1,26 @@
 ---
-title: Local Values - HCL Configuration Language
+title: Local variables
 description: >-
-  Local values assign a name to an expression that can then be used multiple
-  times within a folder.
+  The `local` and `locals` blocks define local variables that assign a name to an expression. Learn how to configure local variables.
 ---
 
-# Local Values
+# Local variables
 
-::: info
-**Note:** This page is about HCL2 Packer templates. HCL2 templates
-were first introduced as a beta feature into Packer version 1.5. As of v1.7,
-HCL2 support is no longer in beta, and is the preferred way to write Packer
-configuration. For the old-style stable configuration language see
-[template docs](/docs/templates/legacy_json_templates/). As of v1.6.2, you can
-convert your legacy JSON template into an HCL2 config file using the
-[hcl2_upgrade command](/docs/commands/hcl2_upgrade).
-:::
+This topic provides reference information about the `local` and `locals` blocks, which define local variables that you can use in your Packer templates. To learn about input variables, refer to
+[Input variables](/docs/templates/hcl_templates/variables).
 
-There are two kinds of variables in HCL Packer templates: Input variables,
-sometimes simply called "variables", and Local variables, also known as
-"locals". Input variables may have defaults, but those defaults can
-be overridden from the command line or special variable files. Local variables
-can be thought of as constants, and are not able to be overridden at runtime.
+## Introduction
 
-This page is about local variables. To learn about input variables, see the
-[input variables](/docs/templates/hcl_templates/variables) page.
+Local variables assign a name to an expression, which you can use multiple
+times within a folder. The expression is evaluated at run time, and can
+reference input variables, other local variables, data sources, and HCL
+functions. You cannot overwrite local variables.
 
-Local values assign a name to an expression, that can then be used multiple
-times within a folder.
-
-If [variables](/docs/templates/hcl_templates/variables) are analogous to function arguments then
-_local values_ are comparable to a function's local variables.
-
-Input variable and local variable usage are introduced in the [_Variables
-Guide_](/guides/hcl/variables).
+Refer to [Input Variables and local variables](/guides/hcl/variables) for additional information about variables in Packer. 
 
 ## Examples
 
-Local values are defined in `local` or `locals` blocks:
+Local variables are defined in a `local` or `locals` block:
 
 ```hcl
 # Using the local block allows you to mark locals as sensitive, which will
@@ -59,7 +42,7 @@ locals {
   name_prefix         = "${var.name_prefix != "" ? var.name_prefix : local.default_name_prefix}"
 }
 
-# Local values can be interpolated elsewhere using the "local." prefix.
+# Local variables can be referenced using the "local." prefix.
 source "virtualbox-iso" "example" {
   output = "${local.name_prefix}-files"
   # ...
@@ -85,10 +68,10 @@ source "amazon-ebs" "server" {
 
   tags = "${merge(
     local.common_tags,
-    map(
-      "Name", "awesome-app-server",
-      "Role", "server"
-    )
+    {
+      "Name" = "awesome-app-server",
+      "Role" = "server"
+    }
   )}"
   # ...
 }
@@ -128,9 +111,54 @@ The expression of a local value can refer to other locals, but reference cycles
 are not allowed. That is, a local cannot refer to itself or to a variable that
 refers (directly or indirectly) back to it.
 
-It's recommended to group together logically-related local values into a single
+It's recommended to group together logically-related local variables into a single
 block, particularly if they depend on each other. This will help the reader
 understand the relationships between variables. Conversely, prefer to define
-_unrelated_ local values in _separate_ blocks, and consider annotating each
+_unrelated_ local variables in _separate_ blocks, and consider annotating each
 block with a comment describing any context common to all of the enclosed
 locals.
+
+## Known limitations
+
+At this present time the use of locals within data sources such as the example below is not supported. 
+
+```hcl
+locals {
+  cloud_owners           = ["happycloud"]
+  cloud_base_filter_name = "cloud-hvm-2.0.*-x86_64-gp2"
+}
+
+data "happycloud" "happycloud-linux2-east" {
+  filters = {
+    name = local.cloud_base_filter_name
+  }
+  most_recent = true
+  owners = local.cloud_owners
+}
+```
+
+Locals can reference data sources but data sources can not reference locals to avoid cyclic dependencies, where a local
+may reference a data source that references the same local or some other locals variable. The preferred method, at this time,
+for referencing user input data within a data source is to use the `variable` block. 
+
+```hcl
+variable "cloud_base_filter_name" {
+  type     = string
+  default  = "cloud-hvm-2.0.*-x86_64-gp2"
+}
+
+variable "cloud_owners" {
+  type     = string
+  default  = "happycloud"
+}
+
+data "happycloud" "happycloud-linux2-east" {
+  filters = {
+    name =  var.cloud_base_filter_name
+  }
+  most_recent = true
+  owners = var.cloud_owners
+}
+```
+
+

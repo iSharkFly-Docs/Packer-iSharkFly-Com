@@ -1,6 +1,6 @@
 ---
-title: signum - Functions - Configuration Language
-description: The signum function determines the sign of a number.
+title: signum function reference
+description: The `signum` function determines the sign of a number. 
 ---
 
 # `signum` Function

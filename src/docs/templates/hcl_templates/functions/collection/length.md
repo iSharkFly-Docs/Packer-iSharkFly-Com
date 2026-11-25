@@ -1,6 +1,6 @@
 ---
-title: length - Functions - Configuration Language
-description: The length function determines the length of a collection or string.
+title: length function reference
+description: The `length` function determines the length of a collection or string. Learn how to use the `length` function in Packer templates.
 ---
 
 # `length` Function

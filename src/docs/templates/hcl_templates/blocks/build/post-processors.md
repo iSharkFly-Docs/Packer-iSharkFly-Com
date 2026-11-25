@@ -1,25 +1,16 @@
 ---
 description: >
-  The post-processors block allows to define lists of post-processors to apply
-  to an artifact.
-title: post-processors - build - Blocks
+  Add the `post-processors` block to a `build` block to define a list of post-processors to apply to an artifact. Learn how to configure nested `post-processors` blocks.
+title: post-processors block reference
 ---
 
-# The `post-processors` block
+# `post-processors` block
 
-::: info
-**Note:** This page is about HCL2 Packer templates. HCL2 templates
-were first introduced as a beta feature into Packer version 1.5. As of v1.7,
-HCL2 support is no longer in beta, and is the preferred way to write Packer
-configuration. For the old-style stable configuration language see
-[template docs](/docs/templates/legacy_json_templates/). As of v1.6.2, you can
-convert your legacy JSON template into an HCL2 config file using the
-[hcl2_upgrade command](/docs/commands/hcl2_upgrade).
-:::
+This topic provides reference information about the `post-processors` block.
 
-The `post-processors` block allows to define lists of
-[`post-processor`s](/docs/templates/hcl_templates/blocks/build/post-processor), that will run
-from the artifact of each build.
+## Description
+
+Add a `post-processors` block to your `build` block to include a list of [post-processor](/docs/templates/hcl_templates/blocks/build/post-processor) configurations. Packer runs the post-processors for an artifact after each build. 
 
 ```hcl
 # builds.pkr.hcl

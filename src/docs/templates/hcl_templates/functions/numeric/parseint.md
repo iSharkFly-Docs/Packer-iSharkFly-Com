@@ -1,8 +1,8 @@
 ---
-title: parseint - Functions - Configuration Language
+title: parseint function reference
 description: >-
-  The parseint function parses the given string as a representation of an
-  integer.
+  The `parseint` function parses the given string as a representation of an
+  integer. 
 ---
 
 # `parseint` Function

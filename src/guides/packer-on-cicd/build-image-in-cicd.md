@@ -1,5 +1,7 @@
 ---
 title: Build Images in CI/CD
+description: >-
+  Learn how to build Packer images within a continuous integration / continuous delivery pipeline.
 ---
 
 # Build Images in CI/CD
@@ -14,11 +16,11 @@ The majority of the [Packer Builders](/docs/builders/) can run just fine in a
 container, a common model used by most CI/CD services. However, while it is
 possible to run many builders in containers or nested virtualization, this may
 require advanced configuration; examples include the [QEMU
-builder](https://www.packer.io/docs/builders/qemu) for
+builder](https://developer.hashicorp.com/packer/plugins/builders/qemu) for
 [KVM](https://www.linux-kvm.org/page/Main_Page) or
 [Xen](https://www.xenproject.org/), the [VirtualBox
-builder](https://www.packer.io/docs/builders/virtualbox) for OVA or OVF virtual machines, and the
-[VMware builder](https://www.packer.io/docs/builders/vmware) for use with VMware products that are
+builder](https://developer.hashicorp.com/packer/plugins/builders/virtualbox) for OVA or OVF virtual machines, and the
+[VMware builder](https://developer.hashicorp.com/packer/plugins/builders/vmware) for use with VMware products that are
 all designed to run on a bare-metal machine or within nested virtualization.
 
 The [Building a VirtualBox Image with Packer in

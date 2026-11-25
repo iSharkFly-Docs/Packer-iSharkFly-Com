@@ -1,25 +1,22 @@
 ---
 description: |
-  The `packer hcl2_upgrade` Packer command is used to transpile a JSON
-  configuration template to its formatted HCL2 counterpart. The command will
-  return a zero exit status on success, and a non-zero exit status on failure.
-title: packer hcl2_upgrade - Commands
+  The `packer hcl2_upgrade` Packer command transpiles a JSON
+  configuration template into HCL2 so you can transition to HCL templates.
+title: packer hcl2_upgrade command reference
 ---
 
+# `packer hcl2_upgrade` command reference
+
+The `packer hcl2_upgrade` Packer command transpiles a JSON
+configuration template to it's formatted HCL2 counterpart. The command
+returns a zero exit status on success and a non-zero exit status on failure.
+
 ::: info
-**Note:** This command is Beta, and currently being improved upon; do not
-hesitate [opening a new
-issue](https://github.com/hashicorp/packer/issues/new/choose) if you find
-something wrong.
+**This command is beta**. We do not recommend using beta functionality in production environments. To report an issue and provide feedback, [open a GitHub
+issue](https://github.com/hashicorp/packer/issues/new/choose).
 :::
 
-# `hcl2_upgrade` Command
-
-The `packer hcl2_upgrade` Packer command is used to transpile a JSON
-configuration template to it's formatted HCL2 counterpart. The command will
-return a zero exit status on success, and a non-zero exit status on failure.
-
-Example usage:
+## Usage
 
 ```shellsession
 $ packer hcl2_upgrade my-template.json
@@ -80,7 +77,7 @@ variable "aws_secret_key" {
 
 ## Go template functions
 
-`hcl2_upgrade` will do its best to transform your go _template calls_ to HCL2,
+`hcl2_upgrade` will do its best to transform your Go _template calls_ to HCL2,
 here is the list of calls that should get transformed:
 
 - `` {{ user `my_var` }} `` becomes `${var.my_var}`.
@@ -92,7 +89,7 @@ here is the list of calls that should get transformed:
   will be created for all generated files.
 - `` {{ build `ID` }} `` becomes `${build.ID}`.
 
-The rest of the calls should remain go template calls for now, this will be
+The rest of the calls should remain Go template calls for now, this will be
 improved over time.
 
 ::: info

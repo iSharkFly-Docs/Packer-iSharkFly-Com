@@ -1,6 +1,6 @@
 ---
-title: min - Functions - Configuration Language
-description: The min function takes one or more numbers and returns the smallest number.
+title: min function reference
+description: The `min` function returns the smallest number in a set of one or more numbers. 
 ---
 
 # `min` Function

@@ -1,22 +1,16 @@
 ---
-title: lookup - Functions - Configuration Language
-description: The lookup function retrieves an element value from a map given its key.
+title: lookup function reference
+description: The `lookup` function retrieves an element value from a map using the map key. Learn how to use the `lookup` function in Packer templates.
 ---
 
 # `lookup` Function
 
 `lookup` retrieves the value of a single element from a map, given its key.
-If the given key does not exist, a the given default value is returned instead.
+If the given key does not exist, the given default value is returned instead.
 
 ```hcl
 lookup(map, key, default)
 ```
-
-::: info
-For historical reasons, the `default` parameter is actually optional. However,
-omitting `default` is deprecated since v0.7 because that would then be
-equivalent to the native index syntax, `map[key]`.
-:::
 
 ## Examples
 

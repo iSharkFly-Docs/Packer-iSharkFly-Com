@@ -1,5 +1,7 @@
 ---
 title: Build a VirtualBox Image with Packer in TeamCity
+description: >-
+  Use Packer to build VirtualBox images in TeamCity. Learn how to provision a bare-metal machine, install dependencies, and create and run a build in TeamCity.
 ---
 
 # Build a VirtualBox Image with Packer in TeamCity
@@ -12,7 +14,7 @@ The Packer VirtualBox builder requires access to VirtualBox. Virtualization is
 not universally supported on cloud instances, so we recommend you run these
 builds on either a bare metal server, or cloud instances which support nested
 virtualization, such as Azure or GCP. This is also true for the
-[VMWare](https://www.packer.io/docs/builders/vmware) and the [QEMU](https://www.packer.io/docs/builders/qemu)
+[VMware](https://developer.hashicorp.com/packer/plugins/builders/vmware) and the [QEMU](https://developer.hashicorp.com/packer/plugins/builders/qemu)
 Packer builders.
 
 We will use Chef's [Bento boxes](https://github.com/chef/bento) to provision an
@@ -30,7 +32,7 @@ a `baremetal_0` server type for testing, but for regular use, the `baremetal_1`
 instance may be a better option.
 
 There is also a [Packet
-Provider](https://www.terraform.io/docs/providers/packet/index.html) in
+Provider](https://registry.terraform.io/providers/packethost/packet/latest/docs) in
 Terraform you can use to provision the project and instance.
 
 ```hcl
@@ -71,7 +73,7 @@ $ dpkg -i virtualbox-5.2_5.2.2-119230~Ubuntu~xenial_amd64.deb
 ```
 
 You can also use the [`remote-exec`
-provisioner](https://www.terraform.io/docs/provisioners/remote-exec.html) in
+provisioner](https://developer.hashicorp.com/terraform/docs/provisioners/remote-exec) in
 your Terraform configuration to automatically run these commands when
 provisioning the new instance.
 
@@ -79,7 +81,7 @@ provisioning the new instance.
 
 The TeamCity Agent machine will also need Packer Installed. You can find the
 latest download link from the [Packer
-Download](https://www.packer.io/downloads) page.
+Download](https://developer.hashicorp.com/packer/downloads) page.
 
 ```shellsession
 $ curl -OL "https://releases.hashicorp.com/packer/1.1.2/packer_1.1.2_linux_amd64.zip"
@@ -127,7 +129,7 @@ This will use the `build` command in Packer to build the image defined in
 using is a fork of [Chef/Bento](https://github.com/chef/bento). Packer defaults
 to building VirtualBox machines by launching a GUI that shows the console.
 Since this will run in CI/CD, use the [`headless`
-variable](https://www.packer.io/docs/builders/virtualbox-iso#headless) to instruct Packer to
+variable](https://developer.hashicorp.com/packer/plugins/builders/virtualbox/iso#headless) to instruct Packer to
 start the machine without the console. Packer can build multiple image types,
 so the [`-only=virtualbox-iso`
 option](/docs/commands/build#only-foo-bar-baz) instructs Packer to only

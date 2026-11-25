@@ -1,8 +1,8 @@
 ---
-title: ceil - Functions - Configuration Language
+title: ceil function reference
 description: |-
-  The ceil function returns the closest whole number greater than or equal to
-  the given value.
+  The `ceil` function returns the closest whole number greater than or equal to
+  the given value. 
 ---
 
 # `ceil` Function

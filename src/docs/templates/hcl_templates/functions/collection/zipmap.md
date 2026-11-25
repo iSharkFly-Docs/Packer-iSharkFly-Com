@@ -1,8 +1,8 @@
 ---
-title: zipmap - Functions - Configuration Language
+title: zipmap function reference
 description: |-
-  The zipmap function constructs a map from a list of keys and a corresponding
-  list of values.
+  The `zipmap` function constructs a map from a list of keys and a corresponding
+  list of values. Learn how to use the `zipmap` function in Packer templates.
 ---
 
 # `zipmap` Function

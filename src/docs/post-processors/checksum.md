@@ -1,17 +1,14 @@
 ---
 description: >
-  The checksum post-processor computes specified checksum for the artifact list
-  from an upstream builder or post-processor. All downstream post-processors
-  will see the new artifacts. The primary use-case is compute checksum for
-  artifacts allows to verify it later. So firstly this post-processor get
-  artifact, compute it checksum and pass to next post-processor original
-  artifacts and checksum files.
-title: Checksum - Post-Processors
+  The `checksum` post-processor computes the checksum for the artifact list
+  from an upstream builder or post-processor so that you can verify artifacts. 
+title: checksum post-processor reference
 ---
 
-# Checksum Post-Processor
+<Badge type="tip" text="Official" />
 
-Type: `checksum`
+# `checksum` post-processor
+
 Artifact BuilderId: `packer.post-processor.checksum`
 
 The checksum post-processor computes specified checksum for the artifact list
@@ -23,20 +20,19 @@ After computes checksum for artifacts, you can use new artifacts with other
 post-processors like
 [artifice](/docs/post-processors/artifice),
 [compress](/docs/post-processors/compress),
-[docker-push](https://www.packer.io/docs/post-processors/docker/docker-push), or
+[docker-push](https://developer.hashicorp.com/packer/plugins/post-processors/docker/docker-push), or
 a third-party post-processor.
 
 ## Basic example
 
-<Tabs groupId="template-format" :tabs="[{label:'JSON',value:'t0'},{label:'HCL2',value:'t1'}]">
+<Tabs groupId="template-format" :tabs="[{label:'HCL2',value:'t0'},{label:'JSON',value:'t1'}]">
 
 <TabItem value="t0">
 
-```json
-{
-  "type": "checksum",
-  "checksum_types": ["sha1", "sha256"],
-  "output": "packer_{{.BuildName}}_{{.ChecksumType}}.checksum"
+```hcl
+post-processor "checksum" {
+  checksum_types = ["sha1", "sha256"]
+  output = "packer_{{.BuildName}}_{{.ChecksumType}}.checksum"
 }
 ```
 
@@ -44,10 +40,11 @@ a third-party post-processor.
 
 <TabItem value="t1">
 
-```hcl
-post-processor "checksum" {
-  checksum_types = ["sha1", "sha256"]
-  output = "packer_{{.BuildName}}_{{.ChecksumType}}.checksum"
+```json
+{
+  "type": "checksum",
+  "checksum_types": ["sha1", "sha256"],
+  "output": "packer_{{.BuildName}}_{{.ChecksumType}}.checksum"
 }
 ```
 

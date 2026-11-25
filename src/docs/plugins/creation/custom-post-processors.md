@@ -1,16 +1,12 @@
 ---
 description: >
-  Packer Post-processors are the components of Packer that transform one
-  artifact
-
-  into another, for example by compressing files, or uploading them.
-title: Custom Post-Processors - Extending
+  Post-processors compress files, upload files, and perform other tasks that transform artifacts. Learn how to create customm post-processors that extend Packer.
+title: Create custom post-processors
 ---
 
-# Custom Post-Processors
+# Create custom post-processors
 
-Packer Post-processors are the components of Packer that transform one artifact
-into another, for example by compressing files, or uploading them.
+Packer post-processors transform one artifact into another. For example, a post-processor might compress or upload files.
 
 In the compression example, the transformation would be taking an artifact with
 a set of files, compressing those files, and returning a new artifact with only
@@ -18,16 +14,20 @@ a single file (the compressed archive). For the upload example, the
 transformation would be taking an artifact with some set of files, uploading
 those files, and returning an artifact with a single ID: the URL of the upload.
 
-Prior to reading this page, it is assumed you have read the page on [plugin
-development basics](/docs/plugins/).
-
 Post-processor plugins implement the [`packer.PostProcessor`](https://pkg.go.dev/github.com/hashicorp/packer-plugin-sdk/packer#PostProcessor) interface and are
 served using the `plugin.ServePostProcessor` function.
 
+This page explains how to implement and serve custom post-processors. If you want your post-processor to support HashiCorp Cloud Platform (HCP) Packer, you should also review the [HCP Packer Support](/docs/plugins/creation/hcp-support) documentation.
+
 ::: warning
-**Warning!** This is an advanced topic. If you're new to Packer, we
-recommend getting a bit more comfortable before you dive into writing plugins.
+**Warning:** This is an advanced topic that requires strong knowledge of Packer and Packer plugins.
 :::
+
+## Before You Begin
+
+We recommend reviewing the following resources before you begin development:
+- [Developing Plugins - Overview](/docs/plugins/creation/)
+- The [Go](https://go.dev/) language. You must write custom plugins in Go, so this guide assumes you are familiar with the language.
 
 ## The Interface
 

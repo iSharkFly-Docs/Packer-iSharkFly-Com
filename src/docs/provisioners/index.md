@@ -1,21 +1,39 @@
 ---
 description: |
   Provisioners use builtin and third-party software to install and configure the
-  machine image after booting.
-title: Provisioners
+  machine image after booting. Learn about Packer provisioners.
+title: Provisioners overview
 ---
 
-# Provisioners
+# Provisioners overview
 
-Provisioners use builtin and third-party software to install and configure the
-machine image after booting. Provisioners prepare the system for use, so common
-use cases for provisioners include:
+Provisioners use built-in and third-party software to install and configure the machine image after
+booting. Provisioners prepare the system, so you may want to use them for the following use cases:
 
 - installing packages
 - patching the kernel
 - creating users
 - downloading application code
 
-See the [`provisioner`](/docs/templates/hcl_templates/blocks/build/provisioner) block documentation to learn more
-about working with provisioners. For information on an individual provisioner,
-choose it from the sidebar.
+The following provisioners are included with Packer:
+
+- [`breakpoint`](/docs/provisioners/breakpoint) - pause until the user presses `Enter` to resume
+  a build.
+- [`file`](/docs/provisioners/file) - upload files to machines image during a build.
+- [`hcp-sbom`](/docs/provisioners/hcp-sbom) - upload an SBOM and associate it with an artifact 
+   version in the HCP Packer registry.
+- [`shell`](/docs/provisioners/shell) - run shell scripts on the machines image during a build.
+- [`shell-local`](/docs/provisioners/shell-local) - run shell scripts on the host running Packer
+  during a build.
+- [`powershell`](/docs/provisioners/powershell) - run PowerShell scripts on Windows machine
+  images during a build.
+- [`windows-shell`](/docs/provisioners/windows-shell) - run commands using `cmd` on Windows
+  machine images during a build.
+- [`windows-restart`](/docs/provisioners/windows-restart) - initiate a reboot on a Windows
+  machine images during a build.
+
+Additional [Community Supported](/docs/provisioners/community-supported) provisioners are
+developed and maintained by various members of the community.
+
+Refer to the [`provisioner`](/docs/templates/hcl_templates/blocks/build/provisioner) block
+documentation to learn more about working with provisioners.

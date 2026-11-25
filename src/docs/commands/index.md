@@ -1,14 +1,10 @@
 ---
 description: |
-  Packer is controlled using a command-line interface. All interaction with
-  Packer is done via the `packer` tool. Like many other command-line tools, the
-  `packer` tool takes a subcommand to execute, and that subcommand may have
-  additional options as well. Subcommands are executed with `packer SUBCOMMAND`,
-  where "SUBCOMMAND" is the actual command you wish to execute.
-title: Commands
+  The Packer command-line interface lets you perform Packer operations. Use the `packer` CLI command with subcommands, flags, and options to build and manage artifacts and install and manage plugins.
+title: Packer commands overview
 ---
 
-# Packer Commands (CLI)
+# Packer Commands Overview
 
 Packer is controlled using a command-line interface. All interaction with
 Packer is done via the `packer` tool. Like many other command-line tools, the
@@ -21,9 +17,7 @@ subcommands and a brief synopsis of what they do. In addition to this, you can
 run any `packer` command with the `-h` flag to output more detailed help for a
 specific subcommand.
 
-In addition to the documentation available on the command-line, each command is
-documented on this website. You can find the documentation for a specific
-subcommand using the navigation to the left.
+The documentation contains information about each subcommand.
 
 ## Machine-Readable Output
 
@@ -109,7 +103,7 @@ You'll see these data types when you run `packer build`:
   mode. There are three "data" subtypes associated with this type:
 
   - `say`: in a non-machine-readable format, this would be bolded. Normally
-    it is used for anouncements about beginning new steps in the build
+    it is used for announcements about beginning new steps in the build
     process
 
   - `message`: the most commonly used message type, used for basic updates

@@ -1,11 +1,10 @@
 ---
 description: |
-  The `packer console` command allows you to experiment with Packer variable
-  interpolations.
-title: packer console - Commands
+  The `packer console` command starts an interactive console, letting you experiment with Packer variable interpolations.
+title: packer console command reference
 ---
 
-# `console` Command
+# `packer console` command reference
 
 The `packer console` command allows you to experiment with Packer variable
 interpolations. You may access variables in the Packer config you called the
@@ -141,7 +140,7 @@ packer console file.pkr.hcl
 
 Because the file is suffixed with `.pkr.hcl` Packer will start in HCL2 mode.
 
-When you just want to play arround without a config file you can set the
+When you just want to play around without a config file you can set the
 `--config-type=hcl2` option and Packer will start in HCL2 mode:
 
 ```shellsession

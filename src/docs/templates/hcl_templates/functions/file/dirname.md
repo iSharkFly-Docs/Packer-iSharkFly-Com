@@ -1,6 +1,6 @@
 ---
-title: dirname - Functions - Configuration Language
-description: The dirname function removes the last portion from a filesystem path.
+title: dirname function reference
+description: The `dirname` function removes the last portion from a filesystem path. Learn how to use the `dirname` function in Packer templates.
 ---
 
 # `dirname` Function
@@ -23,7 +23,7 @@ any slashes in the given path will be replaced by backslashes before returning.
 Referring directly to filesystem paths in resource arguments may cause
 spurious diffs if the same configuration is applied from multiple systems or on
 different host operating systems. We recommend using filesystem paths only
-for transient values, such as the argument to [`file`](/docs/templates/hcl_templates/functions/file/) (where
+for transient values, such as the argument to [`file`](/docs/templates/hcl_templates/functions/) (where
 only the contents are then stored) or in `connection` and `provisioner` blocks.
 
 ## Examples

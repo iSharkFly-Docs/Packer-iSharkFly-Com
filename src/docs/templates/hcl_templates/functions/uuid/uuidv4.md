@@ -1,13 +1,13 @@
 ---
-title: v4 - uuid - Functions - Configuration Language
-description: The uuidv4 function generates a unique id.
+title: uuidv4 function reference
+description: The `uuidv4` function generates a unique string ID according to RFC 4122 version 4.
 ---
 
 # `uuidv4` Function
 
 `uuidv4` generates a unique identifier string.
 
-The id is a generated and formatted as required by [RFC 4122 section
+The ID is a generated and formatted as required by [RFC 4122 section
 4.4](https://tools.ietf.org/html/rfc4122#section-4.4), producing a Version 4
 UUID. The result is a UUID generated only from pseudo-random numbers.
 
@@ -19,7 +19,7 @@ recommend using the `uuidv4` function in resource configurations.
 
 ```shellsession
 > uuidv4()
-b5ee72a3-54dd-c4b8-551c-4bdc0204cedb
+9fc99a70-7cd5-482d-bb2b-03af016e4e94
 ```
 
 ## Related Functions

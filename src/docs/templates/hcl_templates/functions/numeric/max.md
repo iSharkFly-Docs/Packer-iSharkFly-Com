@@ -1,6 +1,6 @@
 ---
-title: max - Functions - Configuration Language
-description: The max function takes one or more numbers and returns the greatest number.
+title: max function reference
+description: The `max` function returns the largest number from the given set of one or more numbers. 
 ---
 
 # `max` Function

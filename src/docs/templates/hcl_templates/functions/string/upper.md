@@ -1,7 +1,7 @@
 ---
-title: upper - Functions - Configuration Language
+title: upper function reference
 description: >-
-  The upper function converts all cased letters in the given string to
+  The `upper` function converts all lowercase letters in the given string to
   uppercase.
 ---
 

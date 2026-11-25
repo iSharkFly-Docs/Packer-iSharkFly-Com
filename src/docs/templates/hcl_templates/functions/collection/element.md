@@ -1,6 +1,6 @@
 ---
-title: element - Functions - Configuration Language
-description: The element function retrieves a single element from a list.
+title: element function reference
+description: The `element` function retrieves a single element from a list. Learn how to use the `element` function in Packer templates.
 ---
 
 # `element` Function

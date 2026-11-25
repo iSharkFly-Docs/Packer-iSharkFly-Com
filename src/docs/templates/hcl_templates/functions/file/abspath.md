@@ -1,6 +1,6 @@
 ---
-title: abspath - Functions - Configuration Language
-description: The abspath function converts the argument to an absolute filesystem path.
+title: abspath function reference
+description: The `abspath` function converts an argument to an absolute filesystem path. Learn how to use the `abspath` function in Packer templates.
 ---
 
 # `abspath` Function
@@ -13,7 +13,7 @@ Referring directly to filesystem paths in resource arguments may cause spurious
 diffs if the same configuration is applied from multiple systems or on
 different host operating systems. We recommend using filesystem paths only for
 transient values, such as the argument to
-[`file`](/docs/templates/hcl_templates/functions/file/) (where only the contents are then
+[`file`](/docs/templates/hcl_templates/functions/) (where only the contents are then
 stored).
 
 ## Examples

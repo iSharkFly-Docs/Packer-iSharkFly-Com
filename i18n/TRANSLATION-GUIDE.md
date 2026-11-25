@@ -2,7 +2,7 @@
 
 ## 文件位置
 
-- 英文原文：`src/<路径>.md`，**不要修改**。它由 `scripts/import-website.mjs` 从 `website/content/` 转换生成；构建时 `scripts/sync-zh.mjs` 会把它发布到 `/en/<路径>`。
+- 英文原文：`src/<路径>.md`，**不要修改**。它由 `scripts/import-unified-docs.mjs` 从官方仓库 [hashicorp/web-unified-docs](https://github.com/hashicorp/web-unified-docs) 的 `content/packer/<版本>/` 转换生成；构建时 `scripts/sync-zh.mjs` 会把它发布到 `/en/<路径>`。
 - 中文译文：`i18n/zh/<路径>.md`，与原文路径一一对应。构建时发布到站点根路径 `/<路径>`。
 - 没有译文的页面会自动以英文显示并标记 `untranslated: true`。
 

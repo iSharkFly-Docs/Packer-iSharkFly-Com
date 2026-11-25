@@ -1,9 +1,7 @@
 ---
 description: |
-  Packer strives to be stable and bug-free, but issues inevitably arise where
-  certain things may not work entirely correctly, or may not appear to work
-  correctly.
-title: Debugging - Other
+  Learn how to debug issues with Packer builds and plugins using `packer build`, logs, and other troubleshooting tools. 
+title: Debugging Packer
 ---
 
 # Debugging Packer Builds
@@ -71,7 +69,7 @@ any logging to be enabled.
 
 ### Debugging Plugins
 
-Each packer plugin runs in a separate process and communicates with RCP over a
+Each packer plugin runs in a separate process and communicates with RPC over a
 socket therefore using a debugger will not work (be complicated at least).
 
 But most of the Packer code is really simple and easy to follow with PACKER_LOG
@@ -81,7 +79,7 @@ homed in on the problem is usually enough.
 ### Debugging Packer in Powershell/Windows
 
 In Windows you can set the detailed logs environmental variable `PACKER_LOG` or
-the log variable `PACKER_LOG_PATH` using powershell environment variables. For
+the log variable `PACKER_LOG_PATH` using PowerShell environment variables. For
 example:
 
 ```powershell
@@ -116,7 +114,7 @@ AMI.
 {
   "type": "shell",
   "inline": [
-    "while [ ! -f /var/lib/cloud/instance/boot-finished ]; do echo 'Waiting for cloud-init...'; sleep 1; done"
+    "cloud-init status --wait"
   ]
 }
 ```
@@ -138,10 +136,10 @@ On Unix systems, you can check what your file descriptor limit is with
 
 ## Issues when using long temp directory
 
-Packer uses unix sockets internally, which are created inside the default
+Packer uses Unix sockets internally, which are created inside the default
 directory for temporary files. Some operating systems place a limit on the
 length of the socket name, usually between 80 and 110 characters. If you get an
-error like this (for any builder, not just docker):
+error like this (for any builder, not just Docker):
 
 ```txt
 Failed to initialize build 'docker': error initializing builder 'docker': plugin exited before we could connect

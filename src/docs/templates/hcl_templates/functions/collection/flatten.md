@@ -1,6 +1,6 @@
 ---
-title: flatten - Functions - Configuration Language
-description: The flatten function eliminates nested lists from a list.
+title: flatten function reference
+description: The `flatten` function eliminates nested lists from a list. Learn how to use the `flatten` function in Packer templates.
 ---
 
 # `flatten` Function
@@ -28,7 +28,7 @@ Indirectly-nested lists, such as those in maps, are _not_ flattened.
 ## Flattening nested structures for `for_each`
 
 The
-[resource `for_each`](https://www.terraform.io/docs/configuration/resources.html#for_each-multiple-resource-instances-defined-by-a-map-or-set-of-strings)
+[resource `for_each`](https://developer.hashicorp.com/terraform/docs/configuration/resources#for_each-multiple-resource-instances-defined-by-a-map-or-set-of-strings)
 and
 [`dynamic` block](/docs/templates/hcl_templates/expressions#dynamic-blocks)
 language features both require a collection value that has one element for

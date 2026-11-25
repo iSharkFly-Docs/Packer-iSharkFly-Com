@@ -1,26 +1,26 @@
 ---
 description: >
-  Packer Data Sources are the components of Packer that allow data to be fetched for use within the Packer configuration.
-  Use of data sources allows a build to use information defined outside of Packer.
+  Data sources fetch data to use in the Packer configuration. Learn how to define custom data sources so that Packer can use external data in builds.
 title: Custom Data Sources - Extending
 ---
 
 # Custom Data Sources
 
-Packer Data Sources are the components of Packer that allow data to be fetched for use within the configuration.
-Use of data sources allows a build to use information defined outside of Packer. An example of
-data source is the [amazon-ami data source](https://www.packer.io/docs/datasources/amazon/ami), which outputs the data of a fetched Amazon AMI.
-
-Prior to reading this page, it is assumed you have read the page on [plugin
-development basics](/docs/plugins/).
+Packer data sources let Packer fetch data to use within the configuration, including information defined outside of Packer. For example, the [amazon-ami data source](https://developer.hashicorp.com/packer/plugins/datasources/amazon/ami), outputs the data from an Amazon AMI.
 
 Data Source plugins implement the `packersdk.Datasource` interface and are registered within a plugin Set
 with `set.RegisterDatasource(...)` function and served using the `set.Run()`.
 
 ::: warning
-**Warning!** This is an advanced topic. If you're new to Packer, we
-recommend getting a bit more comfortable before you dive into writing plugins.
+**Warning:** This is an advanced topic that requires strong knowledge of Packer and Packer plugins.
 :::
+
+## Before You Begin
+
+We recommend reviewing the following resources before you begin development:
+
+- [Developing Plugins - Overview](/docs/plugins/creation/)
+- The [Go](https://go.dev/) language. You must write custom plugins in Go, so this guide assumes you are familiar with the language.
 
 ## The Interface
 

@@ -1,4 +1,0 @@
----
-title: conversion - Functions - Configuration Language
-description: Overview of available conversion functions
----

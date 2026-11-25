@@ -1,8 +1,7 @@
 ---
-title: replace - Functions - Configuration Language
+title: replace function reference
 description: |-
-  The replace function searches a given string for another given substring,
-  and replaces all occurrences with a given replacement string.
+  The `replace` function replaces all occurrences of substring with a given string. 
 ---
 
 # `replace` Function

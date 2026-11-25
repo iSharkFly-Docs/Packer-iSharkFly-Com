@@ -1,34 +1,26 @@
 ---
 description: >
-  Packer Provisioners are the components of Packer that install and configure
+  Provisioners install and configure software prior to turning a machine into an image. Learn how to create custom provisioners that extend Packer functionality. 
 
-  software into a running machine prior to turning that machine into an image.
-  An
-
-  example of a provisioner is the shell provisioner, which runs shell scripts
-
-  within the machines.
-title: Custom Provisioners - Extending
+title: Create custom provisioners
 ---
 
-# Custom Provisioners
+# Create Custom Provisioners
 
-Packer Provisioners are the components of Packer that install and configure
-software into a running machine prior to turning that machine into an image. An
-example of a provisioner is the [shell
-provisioner](/docs/provisioners/shell), which runs shell scripts within
-the machines.
-
-Prior to reading this page, it is assumed you have read the page on [plugin
-development basics](/docs/plugins/).
+Packer provisioners install and configure software into a running machine prior to turning that machine into an image. For example, the [shell provisioner](/docs/provisioners/shell) runs shell scripts within machines.
 
 Provisioner plugins implement the [`packer.Provisioner`](https://pkg.go.dev/github.com/hashicorp/packer-plugin-sdk/packer#Provisioner) interface and are served
 using the `plugin.ServeProvisioner` function.
 
 ::: warning
-**Warning!** This is an advanced topic. If you're new to Packer, we
-recommend getting a bit more comfortable before you dive into writing plugins.
+**Warning:** This is an advanced topic that requires strong knowledge of Packer and Packer plugins.
 :::
+
+## Before You Begin
+
+We recommend reviewing the following resources before you begin development:
+- [Developing Plugins - Overview](/docs/plugins/creation/)
+- The [Go](https://go.dev/) language. You must write custom plugins in Go, so this guide assumes you are familiar with the language.
 
 ## The Interface
 
@@ -45,7 +37,7 @@ type Provisioner interface {
 }
 ```
 
-### The "Prepare" Method
+### The `Prepare` Method
 
 The `Prepare` method for each provisioner is called prior to any runs with the
 configuration that was given in the template. This is passed in as an array of
@@ -71,14 +63,14 @@ validate the configuration.
 The `Prepare` method is called very early in the build process so that errors
 may be displayed to the user before anything actually happens.
 
-### The "ConfigSpec" Method
+### The `ConfigSpec` Method
 
-This method returns a hcldec.ObjectSpec, which is a spec necessary for using
+This method returns a `hcldec.ObjectSpec`, which is a spec necessary for using
 HCL2 templates with Packer. For information on how to use and implement this
 function, check our
 [object spec docs](/guides/hcl/component-object-spec)
 
-### The "Provision" Method
+### The `Provision` Method
 
 The `Provision` method is called when a machine is running and ready to be
 provisioned. The provisioner should do its real work here.

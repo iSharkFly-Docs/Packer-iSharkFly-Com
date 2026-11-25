@@ -1,8 +1,8 @@
 ---
-title: cidrhost - Functions - Configuration Language
+title: cidrhost function reference
 description: |-
-  The cidrhost function calculates a full host IP address within a given
-  IP network address prefix.
+  The `cidrhost` function calculates a full host IP address in a given
+  IP network address prefix. 
 ---
 
 # `cidrhost` Function

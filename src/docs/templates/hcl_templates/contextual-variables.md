@@ -1,26 +1,22 @@
 ---
-title: Contextual Variables - HCL Configuration Language
+title: Contextual variables reference
 description: >-
-  Special variables provide connection information and basic instance state
-  information.
-
-  This page covers all existing special variables.
+  Source variables, build variables, and other special variables are context dependent. Learn about contextual variables that return connection and instance state information.
 ---
 
-::: info
-**Note:** This page is about HCL2 Packer templates. HCL2 templates
-were first introduced as a beta feature into Packer version 1.5. As of v1.7,
-HCL2 support is no longer in beta, and is the preferred way to write Packer
-configuration. For the old-style stable configuration language see
-[template docs](/docs/templates/legacy_json_templates/). As of v1.6.2, you can
-convert your legacy JSON template into an HCL2 config file using the
-[hcl2_upgrade command](/docs/commands/hcl2_upgrade).
-:::
+# Contextual variables
 
-# Source Variables
+This topic provides reference information about special variables that return connection and basic instance state information based on the configuration context. 
 
-It is possible to access the `name` and `type` of your `source` from
-provisioners and post-processors:
+## Source Variables
+
+Use the following syntax to access the `name` and `type` of your `source` from provisioners and post-processors:
+
+```
+<build-name>.<source-type>.<source-name>
+```
+
+The following example queries source names used in the build:
 
 ```hcl
 source "null" "first-example" {
@@ -45,16 +41,16 @@ build {
     inline = ["echo ${source.name} and ${source.type}"]
   }
 }
-
-# This will echo something like:
-#
-# roles.null.consul: consul and null
-# roles.null.nomad: nomad and null
-# roles.null.vault: vault and null
-# roles.null.first-example: first-example and null
 ```
 
-# Build Variables
+The example returns the following values:
+
+- `roles.null.consul`: Returns `consul` and `null`
+- `roles.null.nomad`: Returns `nomad` and `null`
+- `roles.null.vault`: Returns `vault` and `null`
+- `roles.null.first-example`: Returns `first-example` and `null`
+
+## Build Variables
 
 Build variables will allow you to access connection information and basic instance state information for a builder.
 All special build variables are stored in the `build` variable:
@@ -82,19 +78,19 @@ Here is the list of available build variables:
 - **name** Represents the name of the build block being run. This is different
   than the name of the source block being run.
 
-- **ID**: Represents the vm being provisioned. For example, in Amazon it is the instance id; in digitalocean,
-  it is the droplet id; in Vmware, it is the vm name.
+- **ID**: Represents the VM being provisioned. For example, in Amazon it is the instance ID; in DigitalOcean,
+  it is the Droplet ID; in VMware, it is the VM name.
 
 - **Host**, **Port**, **User** and **Password**: The host, port, user, and password that Packer uses to access the machine.
   Useful for using the shell local provisioner to run Ansible or Inspec against the provisioned instance.
 
 - **ConnType**: Type of communicator being used. For example, for SSH communicator this will be "ssh".
 
-- **PackerRunUUID**: Current build's unique id. Can be used to specify build artifacts.
+- **PackerRunUUID**: Current build's unique ID. Can be used to specify build artifacts.
   An example of that, is when multiple builds runs at the same time producing the same artifact.
-  It's possible to differentiate these artifacts by naming them with the builds' unique ids.
+  It's possible to differentiate these artifacts by naming them with the builds' unique IDs.
 
-- **PackerHTTPIP**, **PackerHTTPPort**, and **PackerHTTPAddr**: HTTP IP, port, and address of the file server Packer creates to serve items in the "http" dir to the vm. The HTTP address is displayed in the format `IP:PORT`.
+- **PackerHTTPIP**, **PackerHTTPPort**, and **PackerHTTPAddr**: HTTP IP, port, and address of the file server Packer creates to serve items in the "http" dir to the VM. The HTTP address is displayed in the format `IP:PORT`.
 
 - **SSHPublicKey** and **SSHPrivateKey**: The public and private key that Packer uses to connect to the instance.
   These are unique to the SSH communicator and are unset when using other communicators.
@@ -120,16 +116,16 @@ Example of using [upper](/docs/templates/hcl_templates/functions/string/upper) t
 
 For builder-specific builder variables, please also refer to the builder docs:
 
-- Amazon EC2: [chroot](https://www.packer.io/docs/builders/amazon/chroot#build-shared-information-variables),
-  [EBS Volume](https://www.packer.io/docs/builders/amazon/ebsvolume#build-shared-information-variables),
-  [EBS](https://www.packer.io/docs/builders/amazon/ebs#build-shared-information-variables),
-  [EBS Surrogate](https://www.packer.io/docs/builders/amazon/ebssurrogate#build-shared-information-variables),
-  [Instance](https://www.packer.io/docs/builders/amazon/instance#build-shared-information-variables).
+- Amazon EC2: [chroot](https://developer.hashicorp.com/packer/plugins/builders/amazon/chroot#build-shared-information-variables),
+  [EBS Volume](https://developer.hashicorp.com/packer/plugins/builders/amazon/ebsvolume#build-shared-information-variables),
+  [EBS](https://developer.hashicorp.com/packer/plugins/builders/amazon/ebs#build-shared-information-variables),
+  [EBS Surrogate](https://developer.hashicorp.com/packer/plugins/builders/amazon/ebssurrogate#build-shared-information-variables),
+  [Instance](https://developer.hashicorp.com/packer/plugins/builders/amazon/instance#build-shared-information-variables).
 
 The HCL2 Special Build Variables is in beta; please report any issues or requests on the Packer
 issue tracker on GitHub.
 
-# Packer Version
+## Packer Version
 
 This variable is set to the Packer version currently running.
 
@@ -172,3 +168,109 @@ null.first-example: output will be in this color.
 Make sure to wrap your variable in single quotes in order to escape the
 string that is returned; if you are running a dev version of packer the
 parenthesis may through off your shell escaping otherwise.
+
+## HCP Packer Iteration ID
+
+::: warning
+**Note**: The `packer.iterationID` variable is now deprecated and will be removed in a future version of Packer. HCP Packer Versions should be accessed with their fingerprint instead. The `packer.versionFingerprint` variable is now exposed to be used in its stead with the new HCP Packer data sources.
+:::
+
+If your build is pushing metadata to the HCP Packer registry, this variable is
+set to the value of the Iteration ID associated with this run.
+
+```hcl
+source "null" "example" {
+  communicator = "none"
+}
+
+data "hcp-packer-version" "hardened-source" {
+  bucket_name = "example"
+  channel_name = "latest"
+}
+
+data "hcp-packer-artifact" "file" {
+  bucket_name = "example"
+  version_fingerprint = "${data.hcp-packer-version.hardened-source.fingerprint}"
+  platform = "aws"
+  region = "us-east-1"
+}
+
+build {
+  hcp_packer_registry {
+    bucket_name = "simple"
+  }
+  sources = [
+    "source.null.example"
+  ]
+
+  provisioner "shell-local" {
+    inline = [
+      "echo data is ${packer.iterationID}"
+    ]
+  }
+}
+
+```
+
+```shellsession
+==> mybuild.null.example: Running local shell script: /var/folders/cz/q3cr3tld2457gtlgw7qs1kqc0000gq/T/packer-shell842419427
+    mybuild.null.example: data is 01HN3KCRPVKR5PBQ28TS6B12W0
+```
+
+## HCP Packer Version Fingerprint
+
+If your build is pushing metadata to the HCP Packer registry, this variable is
+set to the value of the Version Fingerprint associated with this run.
+
+```hcl
+source "null" "example" {
+  communicator = "none"
+}
+
+data "hcp-packer-version" "hardened-source" {
+  bucket_name = "example"
+  channel_name = "latest"
+}
+
+data "hcp-packer-artifact" "file" {
+  bucket_name = "example"
+  version_fingerprint = "${data.hcp-packer-version.hardened-source.fingerprint}"
+  platform = "aws"
+  region = "us-east-1"
+}
+
+build {
+  hcp_packer_registry {
+    bucket_name = "simple"
+  }
+  sources = [
+    "source.null.example"
+  ]
+
+  provisioner "shell-local" {
+    inline = [
+      "echo data is ${packer.versionFingerprint}"
+    ]
+  }
+}
+
+```
+
+```shellsession
+==> mybuild.null.example: Running local shell script: /var/folders/cz/q3cr3tld2457gtlgw7qs1kqc0000gq/T/packer-shell842419427
+    mybuild.null.example: data is 01HN3KCRPVKR5PBQ28TS6B12W0
+```
+
+You can also add this value to post-processors, for example to add to a manifest file:
+
+```hcl
+  post-processor "manifest" {
+    output     = "manifest.json"
+    strip_path = true
+    custom_data = {
+      version_fingerprint = "${packer.versionFingerprint}"
+      iteration = "${packer.iterationID}"
+    }
+  }
+
+```

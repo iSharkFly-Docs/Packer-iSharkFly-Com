@@ -1,12 +1,12 @@
 ---
 description: >
-  The data block defines data sources within your Packer configuration.
-title: data - Blocks
+  The `data` block defines data sources within your Packer configuration. Learn how to configure `data` blocks. 
+title: data block referenece
 ---
 
-# The `data` block
+# `data` block
 
-The `data` block defines data sources within your Packer configuration.
+The `data` block defines data sources within your Packer configuration. The following example instructs Packer to query the `amazon-ami` data source for information to use in the template.
 
 ```hcl
 # datasource.pkr.hcl
@@ -15,7 +15,4 @@ data "amazon-ami" "basic-example" {
 }
 ```
 
-# More on data sources
-
-- Read the [full Data Sources](/docs/templates/hcl_templates/datasources) description for a more
-  thorough read.
+Refer to [Data Sources](/docs/templates/hcl_templates/datasources) for instructions about using the `data` block in your configuration. 

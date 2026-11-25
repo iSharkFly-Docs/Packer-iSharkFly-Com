@@ -1,8 +1,7 @@
 ---
 title: Packer Build Pipelines
-description: |-
-  Here we explore how to break your builds into discrete steps so that your
-  builds can be shorter and more reliable.
+description: >-
+  Learn how to shorten Packer build times and improve reliability. Start from an ISO, customize using the virtualbox-ovf builder, and improve efficiency.
 ---
 
 # Why Create a Template Pipeline?
@@ -28,9 +27,44 @@ this example can be applied to other builders as well.
 
 Here is an extremely basic virtualbox-iso template:
 
-<Tabs groupId="template-format" :tabs="[{label:'JSON',value:'t0'},{label:'HCL2',value:'t1'}]">
+<Tabs groupId="template-format" :tabs="[{label:'HCL2',value:'t0'},{label:'JSON',value:'t1'}]">
 
 <TabItem value="t0">
+
+```hcl
+source "virtualbox-iso" "step_1" {
+  boot_command     = ["<esc><wait>", "<esc><wait>", "<enter><wait>",
+                      "/install/vmlinuz<wait>", " initrd=/install/initrd.gz",
+                      " auto-install/enable=true", " debconf/priority=critical",
+                      " preseed/url=http://{{ .HTTPIP }}:{{ .HTTPPort }}/ubuntu_preseed.cfg<wait>",
+                      " -- <wait>", "<enter><wait>"]
+  disk_size        = "40960"
+  guest_os_type    = "Ubuntu_64"
+  http_directory   = "./http"
+  iso_checksum     = "sha256:946a6077af6f5f95a51f82fdc44051c7aa19f9cfc5f737954845a6050543d7c2"
+  iso_url          = "http://old-releases.ubuntu.com/releases/14.04.1/ubuntu-14.04-server-amd64.iso"
+  shutdown_command = "echo 'vagrant' | sudo -S shutdown -P now"
+  ssh_password     = "vagrant"
+  ssh_port         = 22
+  ssh_username     = "vagrant"
+  vm_name          = "vbox-example"
+}
+build {
+  sources = ["source.virtualbox-iso.step_1"]
+
+
+  provisioner "shell" {
+    inline = ["echo initial provisioning"]
+  }
+  post-processor "manifest" {
+    output = "stage-1-manifest.json"
+  }
+}
+```
+
+</TabItem>
+
+<TabItem value="t1">
 
 ```json
 {
@@ -81,46 +115,11 @@ Here is an extremely basic virtualbox-iso template:
 
 </TabItem>
 
-<TabItem value="t1">
-
-```hcl
-source "virtualbox-iso" "step_1" {
-  boot_command     = ["<esc><wait>", "<esc><wait>", "<enter><wait>",
-                      "/install/vmlinuz<wait>", " initrd=/install/initrd.gz",
-                      " auto-install/enable=true", " debconf/priority=critical",
-                      " preseed/url=http://{{ .HTTPIP }}:{{ .HTTPPort }}/ubuntu_preseed.cfg<wait>",
-                      " -- <wait>", "<enter><wait>"]
-  disk_size        = "40960"
-  guest_os_type    = "Ubuntu_64"
-  http_directory   = "./http"
-  iso_checksum     = "sha256:946a6077af6f5f95a51f82fdc44051c7aa19f9cfc5f737954845a6050543d7c2"
-  iso_url          = "http://old-releases.ubuntu.com/releases/14.04.1/ubuntu-14.04-server-amd64.iso"
-  shutdown_command = "echo 'vagrant' | sudo -S shutdown -P now"
-  ssh_password     = "vagrant"
-  ssh_port         = 22
-  ssh_username     = "vagrant"
-  vm_name          = "vbox-example"
-}
-build {
-  sources = ["source.virtualbox-iso.step_1"]
-
-
-  provisioner "shell" {
-    inline = ["echo initial provisioning"]
-  }
-  post-processor "manifest" {
-    output = "stage-1-manifest.json"
-  }
-}
-```
-
-</TabItem>
-
 </Tabs>
 
 In order to build using this template, create a directory named "http" in your
 current working directory. Copy the minimal example from our
-[preseed guide](https://packer.io/guides/automatic-operating-system-installs/preseed_ubuntu#examples)
+[preseed guide](/guides/automatic-operating-system-installs/preseed_ubuntu#examples)
 into a file in your http directory and name it "ubuntu_preseed.cfg". Copy the
 above json template into your current working directory and save it as
 "example_virtualbox_iso.json"
@@ -138,12 +137,36 @@ look up the output file information.
 ## Customizing the iso using the virtualbox-ovf builder
 
 That output filename generated in the first stage can be used as the
-[source_path](https://www.packer.io/docs/builders/virtualbox/ovf#source_path)
+[source_path](https://developer.hashicorp.com/packer/plugins/builders/virtualbox/ovf#source_path)
 for the virtualbox-ovf builder.
 
-<Tabs groupId="template-format" :tabs="[{label:'JSON',value:'t0'},{label:'HCL2',value:'t1'}]">
+<Tabs groupId="template-format" :tabs="[{label:'HCL2',value:'t0'},{label:'JSON',value:'t1'}]">
 
 <TabItem value="t0">
+
+```hcl
+source "virtualbox-ovf" "step_2" {
+  shutdown_command = "echo 'vagrant' | sudo -S shutdown -P now"
+  source_path      = "output-virtualbox-iso/vbox-example.ovf"
+  ssh_password     = "vagrant"
+  ssh_port         = 22
+  ssh_username     = "vagrant"
+  vm_name          = "virtualbox-example-ovf"
+}
+
+build {
+  sources = ["source.virtualbox-ovf.step_2"]
+
+  provisioner "shell" {
+    inline = ["echo secondary provisioning"]
+  }
+}
+
+```
+
+</TabItem>
+
+<TabItem value="t1">
 
 ```json
 {
@@ -171,30 +194,6 @@ for the virtualbox-ovf builder.
 
 </TabItem>
 
-<TabItem value="t1">
-
-```hcl
-source "virtualbox-ovf" "step_2" {
-  shutdown_command = "echo 'vagrant' | sudo -S shutdown -P now"
-  source_path      = "output-virtualbox-iso/vbox-example.ovf"
-  ssh_password     = "vagrant"
-  ssh_port         = 22
-  ssh_username     = "vagrant"
-  vm_name          = "virtualbox-example-ovf"
-}
-
-build {
-  sources = ["source.virtualbox-ovf.step_2"]
-
-  provisioner "shell" {
-    inline = ["echo secondary provisioning"]
-  }
-}
-
-```
-
-</TabItem>
-
 </Tabs>
 
 ## More efficiencies
@@ -209,9 +208,32 @@ the behavior you want. The below example shows a "vagrant" post-processor
 being used with a null builder, and manually sets the artifact from our
 stage-2 ovf build:
 
-<Tabs groupId="template-format" :tabs="[{label:'JSON',value:'t0'},{label:'HCL2',value:'t1'}]">
+<Tabs groupId="template-format" :tabs="[{label:'HCL2',value:'t0'},{label:'JSON',value:'t1'}]">
 
 <TabItem value="t0">
+
+```hcl
+source "null" "step_3" {
+  communicator = "none"
+}
+
+build {
+  sources = ["source.null.step_3"]
+
+  post-processors {
+    post-processor "artifice" {
+      files = ["output-virtualbox-ovf/virtualbox-example-ovf.ovf", "output-virtualbox-ovf/virtualbox-example-ovf-disk001.vmdk"]
+    }
+    post-processor "vagrant" {
+      provider_override = "virtualbox"
+    }
+  }
+}
+```
+
+</TabItem>
+
+<TabItem value="t1">
 
 ```json
 {
@@ -236,29 +258,6 @@ stage-2 ovf build:
       }
     ]
   ]
-}
-```
-
-</TabItem>
-
-<TabItem value="t1">
-
-```hcl
-source "null" "step_3" {
-  communicator = "none"
-}
-
-build {
-  sources = ["source.null.step_3"]
-
-  post-processors {
-    post-processor "artifice" {
-      files = ["output-virtualbox-ovf/virtualbox-example-ovf.ovf", "output-virtualbox-ovf/virtualbox-example-ovf-disk001.vmdk"]
-    }
-    post-processor "vagrant" {
-      provider_override = "virtualbox"
-    }
-  }
 }
 ```
 
@@ -296,7 +295,7 @@ sources.pkr.hcl
 
 source "docker" "example" {
   commit = true
-  // any other configuration you want for your docker containers
+  // any other configuration you want for your Docker containers
 }
 ```
 
@@ -323,7 +322,7 @@ build {
   }
 
   // Make sure that the output from your build can be used in the next build.
-  // In this example, we're tagging the docker image so that the step-2
+  // In this example, we're tagging the Docker image so that the step-2
   // builder can find it without us having to track it down in a manifest.
   post-processor "docker-tag" {
     repository = "ubuntu"
@@ -354,8 +353,11 @@ pipeline.sh
 
 ```sh
 #!/bin/bash
+set -e # abort if there is an issue with any build
 packer build -only='step1.docker.example' .
 packer build -only='step2.docker.example' .
 ```
 
-To run the pipeline, call pipeline.sh. You can add error checking to this script to abort if there's an issue with a build. You can create as many build steps as you want. Each can either inhabit one file
+To run the pipeline, call pipeline.sh. You can create as many build steps as
+you want. Each can either inhabit one file, or you can put multiple steps in
+a single file like shown in the example above.

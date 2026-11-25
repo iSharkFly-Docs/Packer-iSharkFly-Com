@@ -1,8 +1,8 @@
 ---
-title: trimprefix - Functions - Configuration Language
+title: trimprefix function reference
 description: |-
-  The trimprefix function removes the specified prefix from the start of a
-  given string.
+  The `trimprefix` function removes the specified prefix from the start of a
+  given string. 
 ---
 
 # `trimprefix` Function

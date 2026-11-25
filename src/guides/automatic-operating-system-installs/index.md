@@ -2,7 +2,7 @@
 title: Automatic OS Installs
 description: |-
   Learn how to use preseed, kickstart, and autounattend files to automatically
-  answer installation questions and enable Packer to connect to your instnace.
+  answer installation questions and enable Packer to connect to your instance.
 ---
 
 # Automatic OS Installs
@@ -20,5 +20,4 @@ installation answer files in order to perfom those installs; we don't mean to
 be a comprehensive guide on each operating system, but we hope to give you
 enough context to be able to more easily find any further information you need.
 
-Please use the left-hand navigation to find instructions for the operating
-system that is relevant to you.
+Refer to the instructions for your operating system.

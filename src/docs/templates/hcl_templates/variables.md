@@ -1,48 +1,19 @@
 ---
-title: Input Variables - HCL Configuration Language
+title: Input variables reference
 description: |-
   Input variables are parameters for Packer modules.
-  This page covers configuration syntax for variables.
+  Learn how to use the input variable syntax for Packer templates written in HCL.
 ---
 
 # Input Variables
 
-::: info
-**Note:** This page is about HCL2 Packer templates. HCL2 templates
-were first introduced as a beta feature into Packer version 1.5. As of v1.7,
-HCL2 support is no longer in beta, and is the preferred way to write Packer
-configuration. For the old-style stable configuration language see
-[template docs](/docs/templates/legacy_json_templates/). As of v1.6.2, you can
-convert your legacy JSON template into an HCL2 config file using the
-[hcl2_upgrade command](/docs/commands/hcl2_upgrade).
-:::
+This topic provides reference information about input variables in Packer templates. Refer to [Local Variables](/docs/templates/hcl_templates/locals) for information about using local variables in Packer. 
 
-There are two kinds of variables in HCL Packer templates: Input variables,
-sometimes simply called "variables", and Local variables, also known as
-"locals". Input variables may have defaults, but those defaults can
-be overridden from the command line or special variable files. Local variables
-can be thought of as constants, and are not able to be overridden at runtime.
+## Introduction
 
-This page is about input variables. To learn about local variables, see the
-[locals](/docs/templates/hcl_templates/locals) page.
+Input variables, sometimes referred to as variables or Packer variables, are the parameters for a Packer build. Input variables let you customize aspects of a build without altering the build's own source code. Some input variables have default values that you can override using command line options, environment variables, or variable definitions files. You cannot change the value of an input variable after the initial override.
 
-Input variables serve as parameters for a Packer build, allowing aspects of the
-build to be customized without altering the build's own source code.
-
-When you declare variables in the build of your configuration, you can set
-their values using CLI options and environment variables.
-
-Input variable and local variable usage are introduced in the [_Variables
-Guide_](/guides/hcl/variables).
-
-::: info
-**Note:** For brevity, input variables are often referred to as just
-"variables" or "Packer variables" when it is clear from context what sort of
-variable is being discussed. Other kinds of variables in Packer include
-_environment variables_ (set by the shell where Packer runs) and _expression
-variables_ (used to indirectly represent a value in an
-[expression](/docs/templates/hcl_templates/expressions)).
-:::
+Refer to [Input Variables and local variables](/guides/hcl/variables) for additional information.
 
 ## Declaring an Input Variable
 
@@ -89,33 +60,32 @@ name for the variable, which must be unique among all variables in the same
 build. This name is used to assign a value to the variable from outside and to
 reference the variable's value from within the build.
 
-The `variable` block can optionally include a `type` argument to specify what
-value types are accepted for the variable, as described in the following
-section.
 
-The `variable` declaration can also include a `default` argument. If present,
+## Arguments
+
+Packer defines the following arguments for variable declarations:
+
+* [`default`][inpage-default] - A default value which then makes the variable optional.
+* [`type`][inpage-type] - This argument specifies what value types are accepted for the variable.
+* [`description`][inpage-description] - This specifies the input variable's documentation.
+* [`validation`][inpage-validation] - A block to define validation rules, usually in addition to type constraints.
+* [`sensitive`][inpage-sensitive] -  This causes string-values from that variable to be obfuscated from Packer's output.
+
+
+
+### Default values
+
+[inpage-default]: #default-values
+
+The variable declaration can also include a `default` argument. If present,
 the variable is considered to be _optional_ and the default value will be used
-if no value is set when calling the build or running Packer. The `default`
+if no value is set when running Packer. The `default`
 argument requires a literal value and cannot reference other objects in the
 configuration.
 
-## Using Input Variable Values
 
-Within the build that declared a variable, its value can be accessed from
-within [expressions](/docs/templates/hcl_templates/expressions) as `var.<NAME>`, where `<NAME>`
-matches the label given in the declaration block:
-
-```hcl
-source "googlecompute" "debian"  {
-    zone = var.gcp_zone
-    tags = var.gcp_debian_tags
-}
-```
-
-The value assigned to a variable can be accessed only from expressions within
-the folder where it was declared.
-
-## Type Constraints
+### Type Constraints
+[inpage-type]: #type-constraints
 
 The `type` argument in a `variable` block allows you to restrict the [type of
 value](/docs/templates/hcl_templates/expressions#types-and-values) that will be accepted as the value
@@ -144,7 +114,7 @@ The type constructors allow you to specify complex types such as collections:
 The keyword `any` may be used to indicate that any type is acceptable. For more
 information on the meaning and behavior of these different types, as well as
 detailed information about automatic conversion of complex types, see [Type
-Constraints](https://www.terraform.io/docs/configuration/types.html).
+Constraints](https://developer.hashicorp.com/terraform/docs/configuration/types).
 
 If both the `type` and `default` arguments are specified, the given default
 value must be convertible to the specified type.
@@ -156,7 +126,9 @@ variable [from env vars](#environment-variables) or [from the command
 line](#variables-on-the-command-line), the variable will always be interpreted
 as a string.
 
-## Input Variable Documentation
+### Input Variable Documentation
+
+[inpage-description]: #input-variable-documentation
 
 Because the input variables of a build are part of its user interface, you can
 briefly describe the purpose of each variable using the optional `description`
@@ -165,7 +137,7 @@ argument:
 ```hcl
 variable "image_id" {
   type        = string
-  description = "The id of the machine image (AMI) to use for the server."
+  description = "The ID of the machine image (AMI) to use for the server."
 }
 ```
 
@@ -175,18 +147,9 @@ documentation about the build, and so it should be written from the perspective
 of the user of the build rather than its maintainer. For commentary for build
 maintainers, use comments.
 
-## Assigning Values to build Variables
+### Custom Validation Rules
 
-Once a variable is declared in your configuration, you can set it:
-
-- Individually, with the `-var foo=bar` command line option.
-- In variable definitions (`.pkrvars.hcl` and `.auto.pkrvars.hcl`) files,
-  either specified on the command line or automatically loaded.
-- As environment variables, for example: `PKR_VAR_foo=bar`
-
-The following sections describe these options in more detail.
-
-## Custom Validation Rules
+[inpage-validation]: #custom-validation-rules
 
 In addition to Type Constraints, you can specify arbitrary custom validation
 rules for a particular variable using one or more `validation` block nested
@@ -195,11 +158,11 @@ within the corresponding `variable` block:
 ```hcl
 variable "image_id" {
   type        = string
-  description = "The id of the machine image (AMI) to use for the server."
+  description = "The ID of the machine image (AMI) to use for the server."
 
   validation {
     condition     = length(var.image_id) > 4 && substr(var.image_id, 0, 4) == "ami-"
-    error_message = "The image_id value must be a valid AMI id, starting with \"ami-\"."
+    error_message = "The image_id value must be a valid AMI ID, starting with \"ami-\"."
   }
 }
 ```
@@ -215,12 +178,12 @@ If the failure of an expression is the basis of the validation decision, use
 ```hcl
 variable "image_id" {
   type        = string
-  description = "The id of the machine image (AMI) to use for the server."
+  description = "The ID of the machine image (AMI) to use for the server."
 
   validation {
     # regex(...) fails if it cannot find a match
     condition     = can(regex("^ami-", var.image_id))
-    error_message = "The image_id value must be a valid AMI id, starting with \"ami-\"."
+    error_message = "The image_id value must be a valid AMI ID, starting with \"ami-\"."
   }
 }
 ```
@@ -260,6 +223,61 @@ variable "image_metadata" {
 }
 ```
 
+### Suppressing Sensitive Variables
+
+[inpage-sensitive]: #suppressing-sensitive-variables
+
+
+When a variable is sensitive all string-values from that variable will be
+obfuscated from Packer's output :
+
+```hcl
+# var-foo.pkr.hcl
+variable "foo" {
+    sensitive = true
+    default   = {
+        key = "SECR3TP4SSW0RD"
+    }
+}
+```
+
+```shellsession
+$ packer inspect var-foo.pkr.hcl
+Packer Inspect: HCL2 mode
+
+> input-variables:
+var.foo: "{\n  \"key\" = \"<sensitive>\"\n }"
+...
+```
+
+
+## Using Input Variable Values
+
+Within the build that declared a variable, its value can be accessed from
+within [expressions](/docs/templates/hcl_templates/expressions) as `var.<NAME>`, where `<NAME>`
+matches the label given in the declaration block:
+
+```hcl
+source "googlecompute" "debian"  {
+    zone = var.gcp_zone
+    tags = var.gcp_debian_tags
+}
+```
+
+The value assigned to a variable can be accessed only from expressions within
+the folder where it was declared.
+
+
+## Assigning Values to input Variables
+
+Once a variable is declared in your configuration, you can set it:
+
+- Individually, with the `-var foo=bar` command line option.
+- In variable definitions files, either specified on the command line with the `-var-files values.pkrvars.hcl` or automatically loaded (`*.auto.pkrvars.hcl`).
+- As environment variables, for example: `PKR_VAR_foo=bar`
+
+The following sections describe these options in more detail.
+
 ### Variables on the Command Line
 
 To specify individual variables on the command line, use the `-var` option when
@@ -278,11 +296,11 @@ you at least set a default type instead of using empty blocks; this helps the
 HCL parser understand what is being set. Otherwise, the interpreter will assume
 that any variable set on the command line is a string.
 
-### Variable Definitions (`.pkrvars.hcl` and `.auto.pkrvars.hcl`) Files
+### Standard Variable Definitions Files
 
 To set lots of variables, it is more convenient to specify their values in a
-_variable definitions file_ (with a filename ending in either `.pkrvars.hcl` or
-`.pkrvars.json`) and then specify that file on the command line with
+_variable definitions file_ with a filename ending in either `.pkrvars.hcl` or
+`.pkrvars.json` and then specify that file on the command line with
 `-var-file`:
 
 ```shellsession
@@ -290,7 +308,7 @@ $ packer build -var-file="testing.pkrvars.hcl"
 ```
 
 A variable definitions file uses the same basic syntax as Packer language
-files, but consists only of variable name assignments:
+files, but consists only of variable name and its assigned values:
 
 ```hcl
 image_id = "ami-abc123"
@@ -300,7 +318,15 @@ availability_zone_names = [
 ]
 ```
 
-Packer also automatically loads a number of variable definitions files if they
+::: warning
+**Important**: Unlike legacy JSON templates the input variables within a variable definitions file must be declared 
+via a variables block within a standard HCL2 template file `*.pkr.hcl` before it can be assigned a value. 
+Failure to do so will result in an unknown variable error during Packer's runtime.
+:::
+
+### Auto-loaded Variable Definitions Files
+
+Packer also has the ability automatically load one or more variable definitions files if they
 are present:
 
 - Any files with names ending in `.auto.pkrvars.hcl` or `.auto.pkrvars.json`.
@@ -314,6 +340,13 @@ with the root object properties corresponding to variable names:
   "availability_zone_names": ["us-west-1a", "us-west-1c"]
 }
 ```
+
+::: warning
+**Important**: Unlike legacy JSON templates the input variables within a variable definitions file must be declared 
+via a variables block within a standard HCL2 template file `*.pkr.hcl` before it can be assigned a value. 
+Failure to do so will result in an unknown variable error during Packer's runtime.
+:::
+
 
 ### Environment Variables
 
@@ -432,26 +465,3 @@ In the above case, as long as "arg" is optional for an "example" source, there i
 |     `-var bar=yz` argument     | error, "bar undeclared" |  error, "bar undeclared"  |
 |    `export PKR_VAR_bar=yz`     |            -            |             -             |
 
-## A variable can be sensitive
-
-When a variable is sensitive all string-values from that variable will be
-obfuscated from Packer's output :
-
-```hcl
-# var-foo.pkr.hcl
-variable "foo" {
-    sensitive = true
-    default   = {
-        key = "SECR3TP4SSW0RD"
-    }
-}
-```
-
-```shellsession
-$ packer inspect var-foo.pkr.hcl
-Packer Inspect: HCL2 mode
-
-> input-variables:
-var.foo: "{\n  \"key\" = \"<sensitive>\"\n }"
-...
-```

@@ -1,6 +1,6 @@
 ---
-title: abs - Functions - Configuration Language
-description: The abs function returns the absolute value of the given number.
+title: abs function reference
+description: The `abs` function returns the absolute value of the given number. 
 ---
 
 # `abs` Function

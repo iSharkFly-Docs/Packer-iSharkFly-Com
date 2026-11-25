@@ -1,9 +1,7 @@
 ---
-title: try - Functions - Configuration Language
+title: try function reference
 description: |-
-  The try function tries to evaluate a sequence of expressions given as
-  arguments and returns the result of the first one that does not produce
-  any errors.
+  The `try` function evaluates a sequence of expressions and returns the result of the first expression that does not produce any errors.
 ---
 
 # `try` Function

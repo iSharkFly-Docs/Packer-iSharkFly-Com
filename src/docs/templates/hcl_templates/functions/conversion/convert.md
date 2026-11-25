@@ -1,6 +1,6 @@
 ---
-title: convert - Functions - Configuration Language
-description: 'The convert function converts a value or an expression to a given type. '
+title: convert function reference
+description: The `convert` function converts a value or an expression to a given type.
 ---
 
 # `convert` Function

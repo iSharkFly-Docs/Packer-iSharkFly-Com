@@ -1,5 +1,7 @@
 ---
 title: Upload VirtualBox Image to S3
+description: >-
+  Learn how to upload a VirtualBox image built with Packer to S3 within a TeamCity build.
 ---
 
 # Upload VirtualBox Image to S3
@@ -13,7 +15,7 @@ system you use. TeamCity provides a [Build
 Artifacts](https://confluence.jetbrains.com/display/TCD9/Build+Artifact)
 feature which can be used to store the newly generated image. Other CI/CD
 services also have similar build artifacts features built in, like [Circle CI
-Build Artifacts](https://circleci.com/docs/2.0/artifacts/). In addition to the
+Build Artifacts](https://circleci.com/docs/artifacts/). In addition to the
 built in artifact stores in CI/CD tools, there are also dedicated universal
 artifact storage services like
 [Artifactory](https://confluence.jetbrains.com/display/TCD9/Build+Artifact).

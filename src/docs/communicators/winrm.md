@@ -1,23 +1,26 @@
 ---
 description: |
-  Communicators are the mechanism Packer uses to upload files, execute scripts,
-  etc. with the machine being created.
-title: Communicators - Templates
+  The `winrm` communicator establishes a WinRM connection, letting Packer upload files or execute scripts on the machine it creates. 
+title: Establish a WinRM Connection
 ---
 
-# WinRM Communicator
+# Establish a WinRM Connection
+
+This topic describes how to use the `winrm` communicator to establish a WinRM connection to the machine it creates so that Packer can perform actions, such as upload files and execute scripts.
+
+## Introduction 
 
 Communicators are the mechanism Packer uses to upload files, execute scripts,
-etc. with the machine being created. The WinRM communicator uses the
+etc. with the machine being created. The `winrm` communicator uses the
 Windows Remote Management protocol to do this.
 
-## Getting Ready to Use the WinRM Communicator
+## Getting Ready to Use the `winrm` Communicator
 
-The WinRM communicator is not the default communicator, so you will always have
+The `winrm` communicator is not the default communicator, so you will always have
 to set the `"communicator": "winrm",` template option explicitly. In addition,
 you will almost always have to provide a pre-run script that enables and
 configures WinRM on the guest machine. This will generally be in the form of a
-powershell script or a batch file.
+PowerShell script or a batch file.
 
 If you are building from a brand-new and unconfigured operating system
 image, you will need to provide this pre-run script as part of your
@@ -32,7 +35,7 @@ If you are unfamiliar with how to use an autounattend file, take a look at our
 how to automatically initalize your operating system is critical for being able
 to successfully use Packer to build from an iso.
 
-## WinRM Communicator Options
+## `winrm` Communicator Options
 
 - `winrm_username` (string) - The username to use to connect to WinRM.
 
@@ -42,7 +45,7 @@ to successfully use Packer to build from an iso.
   
   NOTE: If using an Amazon EBS builder, you can specify the interface
   WinRM connects to via
-  [`ssh_interface`](https://www.packer.io/docs/builders/amazon-ebs#ssh_interface)
+  [`ssh_interface`](https://developer.hashicorp.com/packer/plugins/builders/amazon/ebs#ssh_interface)
 
 - `winrm_no_proxy` (bool) - Setting this to `true` adds the remote
   `host:port` to the `NO_PROXY` environment variable. This has the effect of
@@ -66,6 +69,8 @@ to successfully use Packer to build from an iso.
   guest. Further reading for remote connection authentication can be found
   [here](https://msdn.microsoft.com/en-us/library/aa384295(v=vs.85).aspx).
 
+<!-- End of code generated from the comments of the WinRM struct in communicator/config.go; -->
+
 ## Examples
 
 ### Basics of WinRM Connection
@@ -88,7 +93,7 @@ to be able to connect via WinRM
 6. If necessary, generate a self-signed certificate or provide a real certificate
    to the WinRM listener.
 
-#### Configuring WinRM in VMWare
+#### Configuring WinRM in VMware
 
 If you are configuring WinRM using an Autounattend.xml, the simplest way to set
 up WinRM is to put the configuration commands directly into the Autounattend
@@ -114,7 +119,7 @@ Autounattend file.
 </FirstLogonCommands>
 ```
 
-It is also possible to call powershell scripts in a similar manner.
+It is also possible to call PowerShell scripts in a similar manner.
 
 The winrmConfig.bat referenced above can be as simple as
 
@@ -138,7 +143,7 @@ Please note that the above batch file is _extremely_ simplistic, and not secure.
 It is intended to be an example of the bare minimum configuration. Below, you'll
 find a more complicated example of a more secure WinRM configuration process.
 
-This batch file will only work for http connections, not https, but will enable
+This batch file will only work for HTTP connections, not HTTPS, but will enable
 you to connect using only the username and password created earlier in the
 Autounattend file. The above batchfile will allow you to connect using a very
 simple Packer config:
@@ -149,7 +154,7 @@ simple Packer config:
         "winrm_password": "SecretPassword"
 ```
 
-A more complex example of a powershell script used for configuration can be seen
+A more complex example of a PowerShell script used for configuration can be seen
 below.
 
 ```powershell
@@ -195,7 +200,7 @@ cmd.exe /c winrm set "winrm/config/listener?Address=*+Transport=HTTPS" "@{Port=`
 
 # Make sure appropriate firewall port openings exist
 cmd.exe /c netsh advfirewall firewall set rule group="remote administration" new enable=yes
-cmd.exe /c netsh firewall add portopening TCP 5986 "Port 5986"
+cmd.exe /c netsh advfirewall firewall add rule name="Port 5986" dir=in action=allow protocol=TCP localport=5986 profile=any
 
 # Restart WinRM, and set it so that it auto-launches on startup.
 cmd.exe /c net stop winrm
@@ -212,10 +217,10 @@ provisioning step to make sure your image is secure.
 
 Most clouds allow you to provide a configuration script that runs when the
 instance is launched. In AWS, this is the
-[user_data_file](https://www.packer.io/docs/builders/amazon-ebs#user_data_file). In Google
+[user_data_file](https://developer.hashicorp.com/packer/plugins/builders/amazon/ebs#user_data_file). In Google
 Cloud, this is provided using the `windows-startup-script-cmd`
-[metadata](https://www.packer.io/docs/builders/googlecompute#metadata) tag.
-[Example](https://www.packer.io/docs/builders/googlecompute#windows-example)
+[metadata](https://developer.hashicorp.com/packer/plugins/builders/googlecompute#metadata) tag.
+[Example](https://developer.hashicorp.com/packer/plugins/builders/googlecompute#windows-example)
 
 Essentially, these files are powershell or cmd scripts that configure winrm,
 without having to be wrapped in an Autounattend. Provide the script in the

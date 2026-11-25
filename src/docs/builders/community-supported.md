@@ -1,29 +1,22 @@
 ---
 description: |
-  Community-maintained builders are not part of the core Packer binary, but
-  can run alongside Packer with minimal extra effort.
-title: Community - Builders
+  Community-supported builders are developed and maintained by third-parties and not HashiCorp. Use them with Packer to extend Packer functionality.
+title: Community-supported builders
 ---
 
-# Community Builders
+# Community-supported builders
 
 The following builders are developed and maintained by various members of the
 Packer community, not by HashiCorp. For more information on how to use community
-builders, see our docs on [extending Packer](/docs/plugins/creation/).
-
-### Community Builders
+builders, refer to our docs on [extending Packer](/docs/plugins/creation/).
 
 - ARM builders
 
-  - [packer-builder-arm-image](https://github.com/solo-io/packer-builder-arm-image) - simple builder lets you extend on existing system images.
-  - [packer-builder-arm](https://github.com/mkaczanowski/packer-builder-arm) - flexible builder lets you extend or build images from scratch with variety of options (ie. custom partition table).
+  - [packer-plugin-arm-image](https://github.com/solo-io/packer-plugin-arm-image): Lets you extend onto existing system images.
+  - [packer-builder-arm](https://github.com/mkaczanowski/packer-builder-arm): Lets you extend or build new images with a variety of options, such as custom partition tables.
 
-- [Exoscale builder](https://github.com/exoscale/packer-plugin-exoscale) - A builder to create Exoscale custom templates based on a Compute instance snapshot.
+- [Exoscale builder](https://github.com/exoscale/packer-plugin-exoscale) - Creates Exoscale custom templates based on a compute instance snapshot.
 
-- [Huawei Cloud ECS builder](https://github.com/huaweicloud/packer-builder-huaweicloud-ecs) - Plugin for creating [Huawei Cloud ECS](https://www.huaweicloud.com/intl/en-us/) images.
+- [Citrix XenServer/Citrix Hypervisor](https://github.com/xenserver/packer-builder-xenserver) - Plugin for creating [Citrix XenServer/Citrix Hypervisor](https://xenserver.org/) images from an ISO image or from an existing template.
 
-- [UpCloud builder](https://github.com/UpCloudLtd/packer-plugin-upcloud) - A suite of Packer plugins for provisioning Upcloud servers.
-
-- [Vultr builder](https://github.com/vultr/packer-builder-vultr) - A builder for creating [Vultr](https://www.vultr.com/) snapshots.
-
-- [Citrix XenServer/Citrix Hypervisor](https://github.com/xenserver/packer-builder-xenserver) - Plugin for creating [Citrix XenServer/Citrix Hypervisor](https://xenserver.org/) images from an iso image or from an existing template.
+- [XCP-NG/Citrix XenServer/Citrix Hypervisor/Updated Fork](https://github.com/ddelnano/packer-plugin-xenserver) - Plugin for creating [XCP-NG/Citrix XenServer/Citrix Hypervisor](https://xcp-ng.org/) images from an ISO image or from an existing template. This is a fork of the orginal and reccomended by the developers of XCP-NG.

@@ -1,6 +1,6 @@
 ---
-title: base64encode - Functions - Configuration Language
-description: The base64encode function applies Base64 encoding to a string.
+title: base64encode function reference
+description: The `base64encode` function encodes a string in base64 format.
 ---
 
 # `base64encode` Function

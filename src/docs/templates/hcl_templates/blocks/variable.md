@@ -1,25 +1,17 @@
 ---
 description: >
-  The variable block, also called the input-variable block, defines variables
-  within your Packer configuration.
-title: variable - Blocks
+  The `variable` and `input-variable` blocks define variables in your Packer configuration. Learn how to use these blocks to declare variables in your template.
+title: variable block reference
 ---
 
-# The `variable` block
+# `variable` block
 
-::: info
-**Note:** This page is about HCL2 Packer templates. HCL2 templates
-were first introduced as a beta feature into Packer version 1.5. As of v1.7,
-HCL2 support is no longer in beta, and is the preferred way to write Packer
-configuration. For the old-style stable configuration language see
-[template docs](/docs/templates/legacy_json_templates/). As of v1.6.2, you can
-convert your legacy JSON template into an HCL2 config file using the
-[hcl2_upgrade command](/docs/commands/hcl2_upgrade).
-:::
+This topic provides reference information about the `variable` block.
 
-The `variable` block, also called the `input-variable` block, defines variables
-within your Packer configuration. An input-variable cannot be used in another
-input variable: we recommend using [locals](/docs/templates/hcl_templates/blocks/locals) for that instead.
+## Description
+
+The `variable` and `input-variable` blocks define variables
+within your Packer configuration. You cannot use the `input-variable` block in another `input-variable` block. We recommend using the [`locals`](/docs/templates/hcl_templates/blocks/locals) to nest variables instead.
 
 ```hcl
 # variables.pkr.hcl
@@ -38,16 +30,17 @@ variable "foo" {
 If a default value is set, the variable is optional. Otherwise, the variable
 **must** be set.
 
-## Assigning Values to build Variables
+## Assigning Values to input Variables
 
 Once a variable is declared in your configuration, you can set it:
 
 - Individually, with the `-var foo=bar` command line option.
-- In variable definitions (`.pkrvars.hcl` and `.auto.pkrvars.hcl`) files,
-  either specified on the command line or automatically loaded.
+- In variable definitions files, either specified on the command line with the `-var-files values.pkrvars.hcl` or automatically loaded (`*.auto.pkrvars.hcl`).
 - As environment variables, for example: `PKR_VAR_foo=bar`
 
-## Custom Validation Rules
+### Custom Validation Rules
+
+[inpage-validation]: #custom-validation-rules
 
 In addition to Type Constraints, you can specify arbitrary custom validation
 rules for a particular variable using one or more `validation` block nested
@@ -56,11 +49,11 @@ within the corresponding `variable` block:
 ```hcl
 variable "image_id" {
   type        = string
-  description = "The id of the machine image (AMI) to use for the server."
+  description = "The ID of the machine image (AMI) to use for the server."
 
   validation {
     condition     = length(var.image_id) > 4 && substr(var.image_id, 0, 4) == "ami-"
-    error_message = "The image_id value must be a valid AMI id, starting with \"ami-\"."
+    error_message = "The image_id value must be a valid AMI ID, starting with \"ami-\"."
   }
 }
 ```
@@ -76,12 +69,12 @@ If the failure of an expression is the basis of the validation decision, use
 ```hcl
 variable "image_id" {
   type        = string
-  description = "The id of the machine image (AMI) to use for the server."
+  description = "The ID of the machine image (AMI) to use for the server."
 
   validation {
     # regex(...) fails if it cannot find a match
     condition     = can(regex("^ami-", var.image_id))
-    error_message = "The image_id value must be a valid AMI id, starting with \"ami-\"."
+    error_message = "The image_id value must be a valid AMI ID, starting with \"ami-\"."
   }
 }
 ```
@@ -164,7 +157,10 @@ source "example" "foo" {
 
 In the above case, as long as "arg" is optional for an "example" source, there is no error and arg won’t be set.
 
-## A variable can be sensitive
+### Suppressing Sensitive Variables
+
+[inpage-sensitive]: #suppressing-sensitive-variables
+
 
 When a variable is sensitive all string-values from that variable will be
 obfuscated from Packer's output :

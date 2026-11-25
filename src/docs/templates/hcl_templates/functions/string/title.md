@@ -1,7 +1,7 @@
 ---
-title: title - Functions - Configuration Language
+title: title function reference
 description: |-
-  The title function converts the first letter of each word in a given string
+  The `title` function converts the first letter of each word in a given string
   to uppercase.
 ---
 

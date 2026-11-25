@@ -1,6 +1,6 @@
 ---
-title: range - Functions - Configuration Language
-description: The range function generates sequences of numbers.
+title: range function reference
+description: The `range` function generates sequences of numbers. Learn how to use the `range` function in Packer templates.
 ---
 
 # `range` Function

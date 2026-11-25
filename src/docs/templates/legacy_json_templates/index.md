@@ -1,13 +1,12 @@
 ---
 description: >
-  The JSON templates are JSON files that configure the various components
-  of Packer in order to create one or more machine images. Templates are
-  portable, static, and readable and writable by both humans and computers.
-  This has the added benefit of being able to not only create and modify
-  templates by hand, but also write scripts to dynamically create or modify
-  templates.
-title: JSON Templates
+  JSON templates are files that configure the Packer components that create one or more machine images. Learn how to configure JSON templates.
+title: JSON templates configuration reference
 ---
+
+# JSON templates configuration reference
+
+This topic provides reference information for creating JSON templates for Packer.
 
 ::: info
 **Note:** This page is about older-style JSON Packer templates. JSON
@@ -15,18 +14,14 @@ templates are still supported by the Packer core, but new features added to the
 Packer core may not be implemented for JSON templates. We recommend you
 transition to HCL templates as soon as is convenient for you, in order to have
 the best possible experience with Packer. To help you upgrade your templates,
-we have written an [hcl2_upgrade command](/docs/commands/hcl2_upgrade) command.
+we have written an [hcl2_upgrade command](/docs/commands/hcl2_upgrade).
 :::
 
-# JSON Templates
+## Introduction
 
-These Packer templates are JSON files that configure the various components
+You can create Packer templates as JSON files that configure the various components
 of Packer in order to create one or more machine images. Templates are portable,
-static, and readable and writable by both humans and computers.
-
-Templates are given to commands such as `packer build`, which will take the
-template and actually run the builds within it, producing any resulting machine
-images.
+static, and readable and writable by both humans and computers. Use the Packer CLI to run builds described in the template to produce any resulting machine images.
 
 ## JSON Template Structure
 
@@ -87,7 +82,7 @@ key with an underscore. Example:
 builders, provisioners, etc. will still result in validation errors.
 
 ::: info
-**Note:** Packer supports HCL2 from version 1.6.0. The Hashicorp
+**Note:** Packer supports HCL2 from version 1.6.0. The HashiCorp
 Configuration Language does support comments anywhere in template files.
 If comments are important to you, consider upgrading your
 JSON template to HCL2 using the `packer hcl2_upgrade` command.
@@ -165,7 +160,7 @@ script to it and run that script using SSH.
 ::: info
 **Note:** This example requires an account with Amazon Web Services.
 There are a number of parameters which need to be provided for a functional
-build to take place. See the [Amazon builder](https://www.packer.io/docs/builders/amazon)
+build to take place. See the [Amazon builder](https://developer.hashicorp.com/packer/plugins/builders/amazon)
 documentation for more information.
 :::
 

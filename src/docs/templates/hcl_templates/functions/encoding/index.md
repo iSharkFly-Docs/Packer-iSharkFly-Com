@@ -1,4 +1,0 @@
----
-title: encoding - Functions - Configuration Language
-description: Overview of available encoding functions
----

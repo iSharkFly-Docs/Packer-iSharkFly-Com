@@ -1,33 +1,26 @@
 ---
 description: |
-  It is possible to write custom builders using the Packer plugin interface, and
-  this page documents how to do that.
-title: Custom Builders - Extending
+  You can create custom builders for Packer that extend building functionality. Learn how write custom builders using the Packer plugin interface.
+title: Create custom builders
 ---
 
-# Custom Builders
+# Create Custom Builders
 
-Packer Builders are the components of Packer responsible for creating a
-virtual machine, bringing it to a point where it can be provisioned, and then
-turning that provisioned virtual machine into a machine image. Several builders
-are officially maintained and distributed by the HashiCorp Packer team -- among
-these are builders for creating images on Amazon EC2, VMWare, Google
-Compute Engine, and many more. You can find documentation for how to use these
-official builders [here](/docs/builders/). It is also possible to write custom
-builders using the Packer plugin interface, and this page documents how to do
-that.
+Packer builders are responsible for creating a virtual machine, setting the virtual machine up for provisioning, and then turning that provisioned virtual machine into a machine image. We officially maintain and distribute several builders, including builders to create images on Amazon EC2, VMware, Google
+Compute Engine, and many more. Refer to the [Builders](/docs/builders/) documentation for details.
 
-Prior to reading this page, you should read the page on [plugin development
-basics](/docs/plugins/).
+This page explains how to use the Packer plugin interface to write custom builders. If you want your builder to support HashiCorp Cloud Platform (HCP) Packer, you should also review the [HCP Packer Support](/docs/plugins/creation/hcp-support) documentation.
 
 ::: warning
-**Warning!** This is an advanced topic. If you're new to Packer, we
-recommend getting comfortable with using Packer and its officially maintained
-plugins before you dive into writing plugins of your own.
+**Warning:** This is an advanced topic that requires strong knowledge of Packer and Packer plugins.
 :::
 
-Custom plugins are written in [golang](https://golang.org/), so this guide
-assumes that you have some familiarity with that programming language.
+## Before You Begin
+
+We recommend reviewing the following resources before you begin development:
+
+- [Developing Plugins - Overview](/docs/plugins/creation/)
+- The [Go](https://go.dev/) language. You must write custom plugins in Go, so this guide assumes you are familiar with the language.
 
 ## The Interface
 
@@ -67,7 +60,7 @@ configuration. The exact semantics of the merge are left to the builder author.
 
 We recommend that you use the
 [mapstructure](https://godoc.org/github.com/mitchellh/mapstructure) library to
-decode the interface{} into a meaningful structure. Mapstructure will take an
+decode the `interface{}` into a meaningful structure. Mapstructure will take an
 `interface{}` and decode it into an arbitrarily complex struct. If there are any
 errors, it generates very human friendly errors that can be returned directly
 from the prepare method. You can find many usage examples of this library within
@@ -177,7 +170,7 @@ about the artifact results and to determine whether they are even able to run
 against a given artifact, so it is important that this ID never changes once
 the builder is published.
 
-The builder ID for each builder is documented on its website docs page.
+The builder ID for each builder is included on the associated documentation page.
 
 ## Provisioning
 
@@ -200,14 +193,14 @@ necessary.
 If you are using the multistep tooling, the Packer plugin SDK contains a
 generic StepProvision which handles execution the provision hook for you and
 automatically supplies any custom builder generatedData you would like to
-provide to procisioners (see below for more details on generatedData.)
+provide to provisioners (see below for more details on generatedData.)
 
 ## Template Engine
 
 ::: warning
 Note: In HCL2 the JSON template engine and generated data is slowly going to
 be deprecated in favor of using HCL2 objects, we will keep on supporting those
-but it is recomended to avoid using them if you can.
+but it is recommended to avoid using them if you can.
 :::
 
 ### Build variables
@@ -316,5 +309,5 @@ order to make it available to the Packer core as a plugin. We have created a
 [scaffolding](https://github.com/hashicorp/packer-plugin-scaffolding/blob/main/builder/scaffolding/builder.go)
 repo to give you an idea of the relationship between the builder
 implementation and the server implementation within a repository, and then read
-[basics of how Plugins work](/docs/plugins/), which breaks down all the
+[basics of how Plugins work](/docs/plugins/install), which breaks down all the
 server details.

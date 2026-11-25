@@ -1,8 +1,7 @@
 ---
-title: format - Functions - Configuration Language
+title: format function reference
 description: |-
-  The format function produces a string by formatting a number of other values
-  according to a specification string.
+  The `format` function applies a specification to format values and produce a new string. 
 ---
 
 # `format` Function
@@ -92,7 +91,7 @@ omitted then default values are selected based on the given value. For example:
 | `%9.2f`  | Width 9, precision 2.        |
 
 The following additional symbols can be used immediately after the `%` symbol
-to set additoinal flags:
+to set additional flags:
 
 | Symbol | Result                                                         |
 | ------ | -------------------------------------------------------------- |

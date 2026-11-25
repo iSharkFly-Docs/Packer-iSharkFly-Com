@@ -1,8 +1,7 @@
 ---
-title: jsondecode - Functions - Configuration Language
+title: jsondecode function reference
 description: |-
-  The jsondecode function decodes a JSON string into a representation of its
-  value.
+  The `jsondecode` function decodes a JSON string into its corresponding Packer value. 
 ---
 
 # `jsondecode` Function

@@ -1,8 +1,8 @@
 ---
-title: setproduct - Functions - Configuration Language
+title: setproduct function reference
 description: |-
-  The setproduct function finds all of the possible combinations of elements
-  from all of the given sets by computing the cartesian product.
+  The `setproduct` function finds all possible combinations of elements
+  from the given sets. Learn how to use the `setproduct` function in Packer templates.
 ---
 
 # `setproduct` Function
@@ -115,7 +115,7 @@ elements all have a consistent type:
 ## Finding combinations for `for_each`
 
 The
-[resource `for_each`](https://www.terraform.io/docs/configuration/resources.html#for_each-multiple-resource-instances-defined-by-a-map-or-set-of-strings)
+[resource `for_each`](https://developer.hashicorp.com/terraform/docs/configuration/resources#for_each-multiple-resource-instances-defined-by-a-map-or-set-of-strings)
 and
 [`dynamic` block](/docs/templates/hcl_templates/expressions#dynamic-blocks)
 language features both require a collection value that has one element for

@@ -1,6 +1,6 @@
 ---
-title: compact - Functions - Configuration Language
-description: The compact function removes empty string elements from a list.
+title: compact function reference
+description: The `compact` function removes empty string elements from a list. Learn how to use the `compact` function in Packer templates.
 ---
 
 # `compact` Function

@@ -1,8 +1,8 @@
 ---
-title: lower - Functions - Configuration Language
+title: lower function reference
 description: >-
-  The lower function converts all cased letters in the given string to
-  lowercase.
+  The `lower` function converts all uppercase letters in the given string to
+  lowercase. 
 ---
 
 # `lower` Function

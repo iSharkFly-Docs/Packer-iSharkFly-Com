@@ -1,10 +1,12 @@
 ---
 description: |
-  Within the template, the provisioners section contains an array of all the
-  provisioners that Packer should use to install and configure software within
-  running machines prior to turning them into machine images.
-title: Provisioners - Templates
+  The `provisioners` block contains provisioners that Packer uses to install and configure software on machines. Learn how to configure provisioners in JSON templates.
+title: provisioners reference for JSON templates
 ---
+
+# `provisioners` reference for JSON templates
+
+This topic provides reference information about the `provisioners` block in JSON templates for Packer. Refer to the documentation for specific provisioner types to learn about their configuration options.
 
 ::: info
 **Note:** This page is about older-style JSON Packer templates. JSON
@@ -12,26 +14,16 @@ templates are still supported by the Packer core, but new features added to the
 Packer core may not be implemented for JSON templates. We recommend you
 transition to HCL templates as soon as is convenient for you, in order to have
 the best possible experience with Packer. To help you upgrade your templates,
-we have written an [hcl2_upgrade command](/docs/commands/hcl2_upgrade) command.
+we have written an [hcl2_upgrade command](/docs/commands/hcl2_upgrade).
 :::
 
-# Template Provisioners
+## Description
 
-Within the template, the provisioners section contains an array of all the
-provisioners that Packer should use to install and configure software within
-running machines prior to turning them into machine images.
+The `provisioners` block contains provisioners that Packer uses to install and configure software within running machines prior to turning them into machine images.
 
-Provisioners are _optional_. If no provisioners are defined within a template,
-then no software other than the defaults will be installed within the resulting
-machine images. This is not typical, however, since much of the value of Packer
-is to produce multiple identical images of pre-configured software.
+Provisioners are optional. When you omit the `provisioners` block, Packer installs only the default software within the resulting machine images. 
 
-This documentation page will cover how to configure a provisioner in a
-template. The specific configuration options available for each provisioner,
-however, must be referenced from the documentation for that specific
-provisioner.
-
-Within a template, a section of provisioner definitions looks like this:
+Use the following syntax to add the `provisioners` block to your JSON template:
 
 ```json
 {

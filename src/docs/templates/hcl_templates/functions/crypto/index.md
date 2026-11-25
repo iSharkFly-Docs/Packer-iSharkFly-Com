@@ -1,4 +1,0 @@
----
-title: crypto - Functions - Configuration Language
-description: Overview of available crypto functions
----

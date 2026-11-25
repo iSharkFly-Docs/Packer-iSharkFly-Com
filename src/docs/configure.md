@@ -1,165 +1,69 @@
 ---
 description: |
-  There are various ways to configure Packer. By default Packer will use known folders,
-  which can be changed by using environment variables.
-title: Configuring Packer
+  Learn how to configure Packer's global behavior using environment variables.
+title: Configure Packer
 ---
 
-# Configuring Packer
+# Configure Packer
 
-::: info
-**Note:** There are a few configuration settings that affect Packer globally
-by configuring the core of Packer. These settings all have reasonable defaults,
-so you generally don't have to worry about it until you want to tweak a
-configuration. If you're just getting started with Packer, don't worry about
-core configuration for now.
-:::
+This topic describes how to configure Packer. The default configurations are suitable for learning how to get started, but you should refer to this topic for guidance as you become more familiar with Packer.
 
-## Packer's home directory
+## Overview
 
-Plugins and core configuration files can exist in the home directory of Packer.
-The home directory of Packer will be the first one of the following env values
-to be set :
+You can set Packer-specific environment variables in a configuration file to configure Packer behavior globally. Install configuration files in the Packer configuration directory to implement the configurations. You can also install plugin files and their SHA256SUM files to the plugins subdirectory under the configuration directory. Refer to [Installing Plugins](/docs/plugins/install) for instructions.
 
-| unix                   | windows               |
-| ---------------------- | --------------------- |
-| `${PACKER_CONFIG_DIR}` | `%PACKER_CONFIG_DIR%` |
-| `${APPDATA}`           | `%APPDATA%`           |
-| `${HOME}`              | `%HOME%`              |
-| user dir of `${USER}`  | user dir of `${USER}` |
+You can also define Packer settings in a JSON configuration file and add it to the execution path. This configuration method is deprecated.
 
-::: info
-Note: On this page "Packer's home directory" will be referenced as
-`PACKER_HOME_DIR`.
-:::
+## Install a configuration file
 
-## Packer's config file
+You can place internal configuration files into Packer's `config` directory. Packer checks the following paths for configuration files:
 
-Packer can optionally read a JSON file for the end user to set core settings.
-The config file of Packer will be looked up on the following paths:
+| OS | Path | Notes |
+| --- | ---| --- |
+| Unix | `${HOME}/.config/packer/` | Packer follows the XDG base directory specification by default. As a result, Packer uses `$HOME/.config/packer` as the default directory when the `PACKER_CONFIG_DIR` environment variable is unset or empty. Packer ignores the XDG specification when the `PACKER_CONFIG_DIR` variable is set or when the installation uses legacy `.packer.d`-style directories, for example `$HOME/.packer.d/`. Refer to the [XDG specification](https://specifications.freedesktop.org/basedir-spec/latest/) for additional information. |
+| Windows | `%APPDATA%\packer.d\` | |
 
-| unix                            | windows                          |
-| ------------------------------- | -------------------------------- |
-| `${PACKER_CONFIG}`              | `%PACKER_CONFIG%`                |
-| `PACKER_HOME_DIR/.packerconfig` | `PACKER_HOME_DIR/packer.config/` |
 
-It is not an error if no config file was found.
+### Examples
 
-## Packer's config directory
+- **Unix**: If `$PACKER_CONFIG_DIR` is set to `/home/packer`, then the configuration directory is `/home/packer/.packer.d/`. Packer does not check other values.
+- **Windows**: If `PACKER_CONFIG_DIR` is set to `C:/`, then the configuration directory is `C:/packer.d/`. Packer does not check other values.
 
-Packer's configuration directory can potentially contain plugins and internal
-Packer files. The config dir of Packer will be looked up on the following paths:
 
-| unix                        | windows                     |
-| --------------------------- | --------------------------- |
-| `PACKER_HOME_DIR/.packer.d` | `PACKER_HOME_DIR/packer.d/` |
+<a id="packer-s-config-file"></a>
 
-Examples:
+##  Install a JSON configuration file
 
-- On a 'unix' system, if the `$PACKER_CONFIG_DIR` env var is set to
-  `/home/packer`, the config directory will be: `/home/packer/.packer.d/` and
-  other values will not be checked.
-- On a 'unix' system, if the `HOME` env var is `/home/azr` or the `USER` env var
-  is `azr`, then the config directory will default to `/home/azr/.packer.d/`.
-- On a 'windows' system, if the `PACKER_CONFIG_DIR` env var is set to `C:/`,the
-  config directory will be: `C:/packer.d/` and other values will not be checked.
+This installation method is deprecated since 1.7. Instead, use the [HCL2
+`required_plugins` block](/docs/templates/hcl_templates/blocks/packer#specifying-plugin-requirements) to configure how Packer installs plugins. 
 
-## Packer's plugin directory
+You use a JSON file to set core Packer settings. Packer checks the following paths for the configuration file:
 
-Plugins will usually be located in the
-[PACKER_HOME_DIR](/docs/configure#packer-s-home-directory).
+| Unix                             | Windows                           |
+| -------------------------------- | --------------------------------- |
+| `${PACKER_CONFIG}`               | `%PACKER_CONFIG%`                 |
+| `${HOME}/.packerconfig`          | `%APPDATA%\packer.config\`        |
 
-* [`packer init`](/docs/commands/init) will install plugins in the **last** directory
-in the following numbered list.
 
-* During the initialization of Packer, any plugin required in the
-**`required_plugins`** section will be looked up in all entries of the following
-list. **First** plugin found takes precedence. Two binaries of the same plugin
-with two different version will be considered as two different plugins. Highest
-found version matching `required_plugins` will be taken into consideration.
+### JSON configuration file reference 
 
-1. The directory where `packer` is, or the executable directory.
-1. The current working directory. (`"."`)
-1. The `PACKER_HOME_DIR/plugins` directory. PACKER_HOME_DIR refers to *[Packer's home
-directory](/docs/configure#packer-s-home-directory)*, if it could be found.
-1. The director(y/ies) under the `PACKER_PLUGIN_PATH` env var, if `PACKER_PLUGIN_PATH`
-is set.
+Use basic JSON to configure the file. You can specify the configuration parameters for the core
+configuration file. All parameters are optional. None of these are required, since all have defaults.
 
-::: warning
-**Note**: There can be more than one directory in the `PACKER_PLUGIN_PATH`
-env var, it will be seperated by a semicolon (`;`) on Windows systems and a
-colon (`:`) on other systems. The order priority will be kept.
-:::
+- `plugin_min_port`: Number that specifies the lowest port that Packer can use for communicating with plugins. Packer communicates with plugins over TCP or Unix sockets on your local host. Default is `10000`. We recommend setting a wide range between `plugin_min_port` and `plugin_max_port` so that Packer has access to at least 25 ports on a single run.
+- `plugin_max_port`: Number that specifies highest port that Packer can for communicating with plugins. Packer communicates with plugins over TCP  connections on your local Unix host. Default is `25000`. We recommend setting a wide range between `plugin_min_port` and `plugin_max_port` so that Packer has access to at least 25 ports on a single run.
 
-Using the following example :
-```hcl
-    required_plugins {
-      happycloud = {
-        version = ">= 2.7.0"
-        source = "github.com/azr/happycloud"
-      }
-    }
-```
+The [`packer init`](/docs/commands/init) command takes precedence over JSON-configure settings when installing plugins.
 
-The plugin getter will then install the binaries in the following location for a
-system with no `PACKER_PLUGIN_PATH` env var set.
 
-* `PACKER_HOME_DIR/plugins/github.com/hashicorp/happycloud/`
+## Configure the cache directory
 
-During initialization, on a `darwin_amd64` system, Packer will look-up for the
-following files:
+Packer uses a cache directory to download large files and for logistics around large file download. By default, Packer caches files in the `.packer_cache` folder of the current directory. Use the `PACKER_CACHE_DIR` environment variable to configure the cache directory. Refer to [`PACKER_CACHE_DIR`](/docs/configure#packer_config_dir) for details.
 
-* `PACKER_EXEC_DIR/github.com/azr/happycloud/packer-plugin-happycloud_*_x5.0_darwin_amd64`
-* `./github.com/azr/happycloud/packer-plugin-happycloud_*_x5.0_darwin_amd64`
-* `PACKER_HOME_DIR/plugins/github.com/azr/happycloud/packer-plugin-happycloud_*_x5.0_darwin_amd64`
-* `PACKER_PLUGIN_PATH/github.com/azr/happycloud/packer-plugin-happycloud_*_x5.0_darwin_amd64`
-* `./packer-plugin-happycloud`
+We recommend using the same Packer cache directory across your builds if multiple builds perform similar actions. This is to avoid downloading the same large file, such as an ISO, multiple times.
 
-The first plugin-name/version files found will take precedence.
 
-For plugins located under the `github.com/azr/happycloud/` directory structure an accompanying SHA256SUM file
-will be required in order for `packer init` to ensure the plugin being loaded has not been tampered with.
-The SHA256SUM file will be automatically generated when a plugin is installed via `packer init` if the plugin
-was installed manually into `PACKER_HOME_DIR/plugins/github.com/azr/happycloud/` then the file
-`PACKER_HOME_DIR/plugins/github.com/azr/happycloud/packer-plugin-happycloud_*_x5.0_darwin_amd64_SHA256SUM` must be generated manually as well.
-
-::: info
-Note: `PACKER_HOME_DIR` is not an actual env var and refers to [Packer's home
-directory](#packer-s-home-directory). `PACKER_EXEC_DIR` is not an actual env var
-and refers to the directory where `packer` is, or the executable directory.
-:::
-
-The format of the configuration file is basic JSON.
-
-## Packer's cache directory
-
-Packer uses a cache directory to download large files and for logistics around
-large file download. By default, Packer caches things in the current directory,
-under: `./packer_cache/`. This can be changed by setting the `PACKER_CACHE_DIR`
-env var. It is recommended to share the same Packer cache dir across your
-builds if you have multiple builds doing similar things to avoid downloading the
-same ISO twice for example.
-
-## Packer config file configuration Reference
-
-Below is the list of all available configuration parameters for the core
-configuration file. None of these are required, since all have defaults.
-
-- `plugin_min_port` and `plugin_max_port` (number) - These are the minimum
-  and maximum ports that Packer uses for communication with plugins, since
-  plugin communication happens over TCP connections on your local host. By
-  default these are 10,000 and 25,000, respectively. Be sure to set a fairly
-  wide range here, since Packer can easily use over 25 ports on a single run.
-
-- `builders`, `commands`, `post-processors`, and `provisioners` are objects
-  that are used to install plugins. The details of how exactly these are set is
-  covered in more detail in the [installing plugins documentation
-  page](/docs/plugins/). It is instead recommended to use [HCL2
-  `required_plugins`](/docs/templates/hcl_templates/blocks/packer#specifying-plugin-requirements)
-  and the [`packer init`](/docs/commands/init) command to install plugins; if
-  you are using both, the `required_plugin` config will take precedence.
-
-## Full list of Environment Variables usable for Packer
+## Configuration reference
 
 Packer uses a variety of environmental variables. A listing and description of
 each can be found below:
@@ -175,17 +79,24 @@ each can be found below:
 - `PACKER_CONFIG_DIR` - The location for the home directory of Packer. See
   [Packer's home directory](#packer-s-home-directory) for more.
 
+- `PACKER_GETTER_READ_TIMEOUT` - Override the timeout when a packer plugin
+  tries to fetch a ISO. The default is `30m`. This is specified as a string with
+  a duration suffix.  The plugin needs to be built on 
+  [v0.6.0](https://github.com/hashicorp/packer-plugin-sdk/releases/tag/v0.6.0)
+  and above of the SDK to be compatible with this variable.
+
 - `PACKER_GITHUB_API_TOKEN` - When using Packer init on HCL2 templates, Packer
-  queries the public API from Github which limits the ammount of queries on can
-  set the `PACKER_GITHUB_API_TOKEN` with a Github Token to make it higher.
+  queries the public API from GitHub which has rate-limits on its APIs.
+  You can set the `PACKER_GITHUB_API_TOKEN` environment variable
+  with a GitHub Token to make it higher.
 
 - `PACKER_LOG` - Setting this to any value other than "" (empty string) or
   "0" will enable the logger. See the [debugging
-  page](https://www.packer.io/docs/other/debugging).
+  page](/docs/debugging).
 
 - `PACKER_LOG_PATH` - The location of the log file. Note: `PACKER_LOG` must
   be set for any logging to occur. See the [debugging
-  page](https://www.packer.io/docs/other/debugging).
+  page](/docs/debugging).
 
 - `PACKER_NO_COLOR` - Setting this to any value will disable color in the
   terminal.
@@ -202,23 +113,20 @@ each can be found below:
   using the Packer's config file, see the [config file configuration
   reference](#packer-config-file-configuration-reference) for more.
 
-- `PACKER_PLUGIN_PATH` - a PATH variable for finding third-party packer
-  plugins. For example: `~/custom-dir-1:~/custom-dir-2`. Separate directories in
-  the PATH string using a colon (`:`) on posix systems and a semicolon (`;`) on
-  windows systems. The above example path would be able to find a provisioner
-  named `packer-provisioner-foo` in either
-  `~/custom-dir-1/packer-provisioner-foo` or
-  `~/custom-dir-2/packer-provisioner-foo`. See the documentation on [plugin
-  directories](#packer-s-plugin-directory) for more.
+- `PACKER_PLUGIN_PATH` - The path variable for finding packer plugins. This takes
+     precedence over `PACKER_CONFIG_DIR/plugins` for plugin discovery if
+     defined. Plugin installation requires access to temporary files under
+     `TMPDIR`. If the system's temp directory is non-writable or non-executable,
+     refer to `TMPDIR` to override the location of the temporary file store used by
+     Packer.
 
 - `CHECKPOINT_DISABLE` - When Packer is invoked it sometimes calls out to
   [checkpoint.hashicorp.com](https://checkpoint.hashicorp.com/) to look for
   new versions of Packer. If you want to disable this for security or privacy
   reasons, you can set this environment variable to `1`.
 
-- `TMPDIR` (Unix) / `TMP` `TEMP` `USERPROFILE` (Windows) - The
-  location of the directory used for temporary files (defaults to `/tmp` on
-  Linux/Unix and `%USERPROFILE%\AppData\Local\Temp` on Windows Vista and above).
-  It might be necessary to customize it when working with large files since
-  `/tmp` is a memory-backed filesystem in some Linux distributions in which case
-  `/var/tmp` might be preferred.
+- `TMPDIR` (Unix) / `TMP`, `TEMP`, `USERPROFILE` (Windows) - This specifies the
+     directory for temporary files (defaulting to `/tmp` on Linux/Unix and
+     `%USERPROFILE%\AppData\Local\Temp` on Windows Vista and later). Customizing
+     this setting might be necessary for systems where the default temporary
+     directory is either non-writable or non-executable.

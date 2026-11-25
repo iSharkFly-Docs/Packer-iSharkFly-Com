@@ -1,6 +1,6 @@
 ---
-title: chomp - Functions - Configuration Language
-description: The chomp function removes newline characters at the end of a string.
+title: chomp function reference
+description: The `chomp` function removes newline characters at the end of a string. 
 ---
 
 # `chomp` Function

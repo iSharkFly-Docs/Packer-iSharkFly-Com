@@ -1,24 +1,15 @@
 ---
-title: Blocks - Configuration Language
-description: The HCL language has a number of blocks that can be used to configure builds.
+title: Built-in blocks overview
+description: A block is a container for configuration in a Packer template. Learn about the types of configration blocks built into HCL for Packer. 
 ---
 
-# Built-in Blocks
+# Built-in blocks overview
 
-::: info
-**Note:** This page is about HCL2 Packer templates. HCL2 templates
-were first introduced as a beta feature into Packer version 1.5. As of v1.7,
-HCL2 support is no longer in beta, and is the preferred way to write Packer
-configuration. For the old-style stable configuration language see
-[template docs](/docs/templates/legacy_json_templates/). As of v1.6.2, you can
-convert your legacy JSON template into an HCL2 config file using the
-[hcl2_upgrade command](/docs/commands/hcl2_upgrade).
-:::
+This topic provides an overview of the configuration blocks built into the Packer language that you can use to write Packer templates in HCL2.
 
-The Packer - HCL2 language includes a number of built-in blocks that you can
-use to configure builds. A block is a container for configuration.
+## Introduction
 
-The most important blocks can be broken into a couple of major types:
+A block is a container for configuration. You can use the following types of blocks in your Packer templates:
 
 - `build` blocks contain configuration for a specific combination of builders,
   provisioners, and post-processors used to create a specific image artifact.
@@ -35,20 +26,19 @@ The most important blocks can be broken into a couple of major types:
   HCL functions or data sources, or composited from variables created in the
   variables blocks.
 
-Use the sidebar to navigate to detailed documentation for each of these blocks.
+The documentation contains information for each block type.
 
-Other blocks, such as the "packer" block, provide information to the Packer core
-about what version it is allowed to run. The "required_plugins" block helps the
+Other blocks, such as the `packer` block, provide information to the Packer core
+about what version it is allowed to run. The `required_plugins` block helps the
 Packer core
 
 Blocks can be defined in multiple files and `packer build folder` will build
 using solely the files from a directory named `folder`.
 
 Packer does not support user-defined blocks and so only the blocks built in to
-the language are available for use. The navigation for this section includes a
-list of all of the available built-in HCL2 blocks.
+the language are available for use. The documentation includes all of the available built-in HCL2 blocks.
 
-## Config example:
+## Configuration examples
 
 ```hcl
 # variables.pkr.hcl
@@ -84,7 +74,7 @@ local "mylocal" {
 
 ```hcl
 # sources.pkr.hcl
-source "amazon-ebs" "example-1" {
+source "happycloud" "foo" {
     // ...
 }
 ```

@@ -1,35 +1,18 @@
 ---
-title: Syntax - Configuration Language
+title: HCL syntax reference
 description: |-
-  HCL has its own syntax, intended to combine declarative
-  structure with expressions in a way that is easy for humans to read and
-  understand.
+  HCL syntax combines declarative structure with expressions into Packer templates. Learn how to use HCL syntax to define infrastructure as code. 
 ---
 
-# HCL Configuration Syntax
+# HCL syntax reference
 
-::: info
-**Note:** This page is about HCL2 Packer templates. HCL2 templates
-were first introduced as a beta feature into Packer version 1.5. As of v1.7,
-HCL2 support is no longer in beta, and is the preferred way to write Packer
-configuration. For the old-style stable configuration language see
-[template docs](/docs/templates/legacy_json_templates/). As of v1.6.2, you can
-convert your legacy JSON template into an HCL2 config file using the
-[hcl2_upgrade command](/docs/commands/hcl2_upgrade).
-:::
+This topic provides reference information about the native HashiCorp configuration language (HCL) syntax you can use to create Packer templates. For information about HCL constructs in JSON, refer to the [JSON syntax reference](/docs/templates/hcl_templates/syntax-json).
 
-Other pages in this section have described various configuration constructs
-that can appear in HCL. This page describes the lower-level syntax of the
-language in more detail, revealing the building blocks that those constructs
-are built from.
+## Introduction
 
-This page describes the _native syntax_ of HCL, which is a rich language
-designed to be easy for humans to read and write. The constructs in HCL can
-also be expressed in [JSON syntax](/docs/templates/hcl_templates/syntax-json), which is harder for
-humans to read and edit but easier to generate and parse programmatically.
-
-This low-level syntax of HCL is defined in terms of a syntax called _HCL_,
-which is also used by configuration languages in other applications, and in
+Learning the HCL syntax helps you understand the building blocks that Packer template constructs
+are built from. HCL is a rich language designed to be easy for humans to read and write. 
+Otherwhich is also used by configuration languages in other applications, and in
 particular other HashiCorp products. It is not necessary to know all of the
 details of HCL in order to use Packer, and so this page summarizes the most
 important details. If you are interested, you can find a full definition of HCL

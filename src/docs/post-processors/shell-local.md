@@ -1,15 +1,14 @@
 ---
 description: |
-  The shell-local Packer post processor enables users to do some post processing
-  after artifacts have been built.
-title: Local Shell - Post-Processors
+  The `shell-local` post-processor starts a local shell, letting you automate post-build actions after Packer builds your artifacts.
+title: shell-local post-processor reference
 ---
 
-# Local Shell Post Processor
+<Badge type="tip" text="Official" />
 
-Type: `shell-local`
+# `shell-local` post-processor
 
-The local shell post processor executes scripts locally during the post
+The `shell-local` post processor executes scripts locally during the post
 processing stage. Shell local provides a convenient way to automate executing
 some task with packer outputs and variables.
 
@@ -93,6 +92,11 @@ Exactly _one_ of the following is required:
 
 Optional parameters:
 
+- `env` (map of strings) - A map of key/value pairs to inject prior to the
+  execute_command. Packer injects some environmental variables by default into
+  the environment, as well, which are covered in the section below. Duplicate
+  `env` settings override `environment_vars` settings.
+
 - `environment_vars` (array of strings) - An array of key/value pairs to
   inject prior to the `execute_command`. The format should be `key=value`.
   Packer injects some environmental variables by default into the
@@ -162,22 +166,22 @@ Optional parameters:
   post-processor after your shell-local processor has run.
 
 - `only_on` (array of strings) - This is an array of [runtime operating
-  systems](https://golang.org/doc/install/source#environment) where
+  systems](https://go.dev/doc/install/source#environment) where
   `shell-local` will execute. This allows you to execute `shell-local` _only_
   on specific operating systems. By default, shell-local will always run if
   `only_on` is not set."
 
-- `use_linux_pathing` (bool) - This is only relevant to windows hosts. If you
+- `use_linux_pathing` (bool) - This is only relevant to Windows hosts. If you
   are running Packer in a Windows environment with the Windows Subsystem for
   Linux feature enabled, and would like to invoke a bash script rather than
   invoking a Cmd script, you'll need to set this flag to true; it tells
-  Packer to use the linux subsystem path for your script rather than the
+  Packer to use the Linux subsystem path for your script rather than the
   Windows path. (e.g. /mnt/c/path/to/your/file instead of
   C:/path/to/your/file). Please see the example below for more guidance on
   how to use this feature. If you are not on a Windows host, or you do not
   intend to use the shell-local post-processor to run a bash script, please
   ignore this option. If you set this flag to true, you still need to provide
-  the standard windows path to the script when providing a `script`. This is
+  the standard Windows path to the script when providing a `script`. This is
   a beta feature.
 
 - `valid_exit_codes` (list of ints) - Valid exit codes for the script. By
@@ -389,7 +393,7 @@ _must_ be extra careful to `exit 0` when necessary.
 
 ### Windows Host
 
-Example of running a .cmd file on windows:
+Example of running a .cmd file on Windows:
 
 <Tabs groupId="template-format" :tabs="[{label:'HCL2',value:'t0'},{label:'JSON',value:'t1'}]">
 
@@ -422,7 +426,7 @@ Contents of `test_cmd.cmd`:
 
     echo %SHELLLOCALTEST%
 
-Example of running an inline command on windows: Required customization:
+Example of running an inline command on Windows: Required customization:
 tempfile_extension
 
 <Tabs groupId="template-format" :tabs="[{label:'HCL2',value:'t0'},{label:'JSON',value:'t1'}]">
@@ -454,7 +458,7 @@ post-processor "shell-local" {
 
 </Tabs>
 
-Example of running a bash command on windows using WSL: Required
+Example of running a bash command on Windows using WSL: Required
 customizations: `use_linux_pathing` and `execute_command`:
 
 <Tabs groupId="template-format" :tabs="[{label:'HCL2',value:'t0'},{label:'JSON',value:'t1'}]">
@@ -527,7 +531,7 @@ post-processor "shell-local" {
 
 </Tabs>
 
-Example of running a powershell script on windows as "inline": Required
+Example of running a PowerShell script on Windows as "inline": Required
 customizations: `env_var_format`, `tempfile_extension`, and `execute_command`
 
 <Tabs groupId="template-format" :tabs="[{label:'HCL2',value:'t0'},{label:'JSON',value:'t1'}]">
@@ -565,7 +569,7 @@ post-processor "shell-local" {
 
 ### Unix Host
 
-Example of running a Shell script on unix:
+Example of running a Shell script on Unix:
 
 <Tabs groupId="template-format" :tabs="[{label:'HCL2',value:'t0'},{label:'JSON',value:'t1'}]">
 
@@ -594,7 +598,7 @@ post-processor "shell-local" {
 
 </Tabs>
 
-Example of running a bash "inline" on unix:
+Example of running a bash "inline" on Unix:
 
 <Tabs groupId="template-format" :tabs="[{label:'HCL2',value:'t0'},{label:'JSON',value:'t1'}]">
 
@@ -624,7 +628,7 @@ post-processor "shell-local" {
 
 </Tabs>
 
-Example of running a python script on unix:
+Example of running a Python script on Unix:
 
 <Tabs groupId="template-format" :tabs="[{label:'HCL2',value:'t0'},{label:'JSON',value:'t1'}]">
 

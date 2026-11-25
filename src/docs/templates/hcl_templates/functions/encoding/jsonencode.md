@@ -1,6 +1,6 @@
 ---
-title: jsonencode - Functions - Configuration Language
-description: The jsonencode function encodes a given value as a JSON string.
+title: jsonencode function reference
+description: The `jsonencode` function encodes a given value as a JSON string.
 ---
 
 # `jsonencode` Function

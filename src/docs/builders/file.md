@@ -1,40 +1,25 @@
 ---
 description: |
-  The file Packer builder is not really a builder, it just creates an artifact
-  from a file. It can be used to debug post-processors without incurring high
-  wait times.
-title: File - Builders
+  The `file` builder creates an artifact from a file. Use the `file` builder to debug post-processors without incurring long wait times.
+title: file builder reference
 ---
 
-# File Builder
+<Badge type="tip" text="Official" />
 
-Type: `file`
-Artifact BuilderId: `packer.file`
+# `file` builder
 
-The `file` Packer builder is not really a builder, it just creates an artifact
-from a file. It can be used to debug post-processors without incurring high
-wait times.
+The `file` builder creates an artifact from a file. You can use it to debug post-processors without incurring long wait times.
+
+Artifact `BuilderId`: `packer.file`
 
 ## Basic Example
 
 Below is a fully functioning example. It create a file at `target` with the
 specified `content`.
 
-<Tabs groupId="template-format" :tabs="[{label:'JSON',value:'t0'},{label:'HCL2',value:'t1'}]">
+<Tabs groupId="template-format" :tabs="[{label:'HCL2',value:'t0'},{label:'JSON',value:'t1'}]">
 
 <TabItem value="t0">
-
-```json
-{
-  "type": "file",
-  "content": "Lorem ipsum dolor sit amet",
-  "target": "dummy_artifact"
-}
-```
-
-</TabItem>
-
-<TabItem value="t1">
 
 ```hcl
 source "file" "basic-example" {
@@ -44,6 +29,18 @@ source "file" "basic-example" {
 
 build {
   sources = ["sources.file.basic-example"]
+}
+```
+
+</TabItem>
+
+<TabItem value="t1">
+
+```json
+{
+  "type": "file",
+  "content": "Lorem ipsum dolor sit amet",
+  "target": "dummy_artifact"
 }
 ```
 
@@ -59,17 +56,18 @@ described.
 
 Any [communicator](/docs/templates/legacy_json_templates/communicator) defined is ignored.
 
-### Required:
+### Required
 
 - `target` (string) - The path for the artifact file that will be created. If
   the path contains directories that don't exist, Packer will create them, too.
 
-### Optional:
+### Optional
 
 You can only define one of `source` or `content`. If none of them is defined
 the artifact will be empty.
 
 - `source` (string) - The path for a file which will be copied as the
-  artifact.
+  artifact. Packer must have permission to open this file, otherwise
+  the build returns an error.
 
 - `content` (string) - The content that will be put into the artifact.

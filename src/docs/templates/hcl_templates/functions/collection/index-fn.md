@@ -1,6 +1,6 @@
 ---
-title: index - Functions - Configuration Language
-description: The index function finds the element index for a given value in a list.
+title: index function reference
+description: The `index` function finds the element index for a given value in a list. Learn how to use the `index` function in Packer templates.
 ---
 
 # `index` Function

@@ -1,6 +1,6 @@
 ---
-title: distinct - Functions - Configuration Language
-description: The distinct function removes duplicate elements from a list.
+title: distinct function reference
+description: The `distinct` function removes duplicate elements from a list. Learn how to use the `distince` function in Packer templates.
 ---
 
 # `distinct` Function

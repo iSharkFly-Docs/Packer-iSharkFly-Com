@@ -1,6 +1,6 @@
 ---
-title: slice - Functions - Configuration Language
-description: The slice function extracts some consecutive elements from within a list.
+title: slice function reference
+description: The `slice` function extracts consecutive elements from a list. Learn how to use the `slice` function in Packer templates.
 ---
 
 # `slice` Function

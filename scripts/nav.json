@@ -1,52 +1,31 @@
 [
   {
-    "base": "/intro/",
-    "items": [
-      {
-        "text": "What is Packer?",
-        "link": "/intro/"
-      },
-      {
-        "text": "Why Use Packer?",
-        "link": "/intro/why"
-      },
-      {
-        "text": "Use Cases",
-        "link": "/intro/use-cases"
-      },
-      {
-        "text": "Getting Started",
-        "items": [
-          {
-            "text": "Install",
-            "link": "https://learn.hashicorp.com/packer/getting-started/install"
-          },
-          {
-            "text": "Build An Image",
-            "link": "https://learn.hashicorp.com/packer/getting-started/build-image"
-          },
-          {
-            "text": "Provision",
-            "link": "https://learn.hashicorp.com/packer/getting-started/provision"
-          },
-          {
-            "text": "Parallel Builds",
-            "link": "https://learn.hashicorp.com/packer/getting-started/parallel-builds"
-          },
-          {
-            "text": "Vagrant Boxes",
-            "link": "https://learn.hashicorp.com/tutorials/packer/aws-get-started-post-processors-vagrant?in=packer/aws-get-started"
-          }
-        ]
-      }
-    ]
-  },
-  {
     "base": "/docs/",
     "items": [
       {
         "text": "Overview",
         "link": "/docs/"
+      },
+      {
+        "text": "What is Packer?",
+        "items": [
+          {
+            "text": "Overview",
+            "link": "/docs/intro/"
+          },
+          {
+            "text": "Why Use Packer?",
+            "link": "/docs/intro/why"
+          },
+          {
+            "text": "Use Cases",
+            "link": "/docs/intro/use-cases"
+          }
+        ]
+      },
+      {
+        "text": "HCP Packer",
+        "link": "/docs/hcp/"
       },
       {
         "text": "Terminology",
@@ -62,6 +41,31 @@
           {
             "text": "<code>init</code>",
             "link": "/docs/commands/init"
+          },
+          {
+            "text": "<code>plugins</code>",
+            "items": [
+              {
+                "text": "Overview",
+                "link": "/docs/commands/plugins/"
+              },
+              {
+                "text": "<code>install</code>",
+                "link": "/docs/commands/plugins/install"
+              },
+              {
+                "text": "<code>installed</code>",
+                "link": "/docs/commands/plugins/installed"
+              },
+              {
+                "text": "<code>remove</code>",
+                "link": "/docs/commands/plugins/remove"
+              },
+              {
+                "text": "<code>required</code>",
+                "link": "/docs/commands/plugins/required"
+              }
+            ]
           },
           {
             "text": "<code>build</code>",
@@ -90,6 +94,10 @@
           {
             "text": "<code>hcl2_upgrade</code>",
             "link": "/docs/commands/hcl2_upgrade"
+          },
+          {
+            "text": "<code>verify-attestation</code>",
+            "link": "/docs/commands/verify-attestation"
           }
         ]
       },
@@ -99,6 +107,10 @@
           {
             "text": "Overview",
             "link": "/docs/templates/"
+          },
+          {
+            "text": "JSON to HCL2",
+            "link": "/docs/templates/json_to_hcl"
           },
           {
             "text": "HCL Templates",
@@ -120,6 +132,10 @@
                       {
                         "text": "Overview",
                         "link": "/docs/templates/hcl_templates/blocks/build/"
+                      },
+                      {
+                        "text": "<code>hcp_packer_registry</code>",
+                        "link": "/docs/templates/hcl_templates/blocks/build/hcp_packer_registry"
                       },
                       {
                         "text": "<code>source</code>",
@@ -172,12 +188,12 @@
                     "text": "Contextual Functions",
                     "items": [
                       {
-                        "text": "Overview",
-                        "link": "/docs/templates/hcl_templates/functions/contextual/"
-                      },
-                      {
                         "text": "aws_secretsmanager",
                         "link": "/docs/templates/hcl_templates/functions/contextual/aws_secretsmanager"
+                      },
+                      {
+                        "text": "aws_secretsmanager_raw",
+                        "link": "/docs/templates/hcl_templates/functions/contextual/aws_secretsmanager_raw"
                       },
                       {
                         "text": "consul",
@@ -196,10 +212,6 @@
                   {
                     "text": "Numeric Functions",
                     "items": [
-                      {
-                        "text": "Overview",
-                        "link": "/docs/templates/hcl_templates/functions/numeric/"
-                      },
                       {
                         "text": "abs",
                         "link": "/docs/templates/hcl_templates/functions/numeric/abs"
@@ -235,6 +247,10 @@
                       {
                         "text": "signum",
                         "link": "/docs/templates/hcl_templates/functions/numeric/signum"
+                      },
+                      {
+                        "text": "sum",
+                        "link": "/docs/templates/hcl_templates/functions/numeric/sum"
                       }
                     ]
                   },
@@ -242,12 +258,12 @@
                     "text": "String Functions",
                     "items": [
                       {
-                        "text": "Overview",
-                        "link": "/docs/templates/hcl_templates/functions/string/"
-                      },
-                      {
                         "text": "chomp",
                         "link": "/docs/templates/hcl_templates/functions/string/chomp"
+                      },
+                      {
+                        "text": "endswith",
+                        "link": "/docs/templates/hcl_templates/functions/string/endswith"
                       },
                       {
                         "text": "format",
@@ -290,6 +306,14 @@
                         "link": "/docs/templates/hcl_templates/functions/string/split"
                       },
                       {
+                        "text": "startswith",
+                        "link": "/docs/templates/hcl_templates/functions/string/startswith"
+                      },
+                      {
+                        "text": "strcontains",
+                        "link": "/docs/templates/hcl_templates/functions/string/strcontains"
+                      },
+                      {
                         "text": "strrev",
                         "link": "/docs/templates/hcl_templates/functions/string/strrev"
                       },
@@ -327,8 +351,12 @@
                     "text": "Collection Functions",
                     "items": [
                       {
-                        "text": "Overview",
-                        "link": "/docs/templates/hcl_templates/functions/collection/"
+                        "text": "alltrue",
+                        "link": "/docs/templates/hcl_templates/functions/collection/alltrue"
+                      },
+                      {
+                        "text": "anytrue",
+                        "link": "/docs/templates/hcl_templates/functions/collection/anytrue"
                       },
                       {
                         "text": "chunklist",
@@ -428,16 +456,16 @@
                     "text": "Encoding Functions",
                     "items": [
                       {
-                        "text": "Overview",
-                        "link": "/docs/templates/hcl_templates/functions/encoding/"
-                      },
-                      {
                         "text": "base64decode",
                         "link": "/docs/templates/hcl_templates/functions/encoding/base64decode"
                       },
                       {
                         "text": "base64encode",
                         "link": "/docs/templates/hcl_templates/functions/encoding/base64encode"
+                      },
+                      {
+                        "text": "base64gzip",
+                        "link": "/docs/templates/hcl_templates/functions/encoding/base64gzip"
                       },
                       {
                         "text": "csvdecode",
@@ -456,6 +484,14 @@
                         "link": "/docs/templates/hcl_templates/functions/encoding/urlencode"
                       },
                       {
+                        "text": "textencodebase64",
+                        "link": "/docs/templates/hcl_templates/functions/encoding/textencodebase64"
+                      },
+                      {
+                        "text": "textdecodebase64",
+                        "link": "/docs/templates/hcl_templates/functions/encoding/textdecodebase64"
+                      },
+                      {
                         "text": "yamldecode",
                         "link": "/docs/templates/hcl_templates/functions/encoding/yamldecode"
                       },
@@ -468,10 +504,6 @@
                   {
                     "text": "Filesystem Functions",
                     "items": [
-                      {
-                        "text": "Overview",
-                        "link": "/docs/templates/hcl_templates/functions/file/"
-                      },
                       {
                         "text": "abspath",
                         "link": "/docs/templates/hcl_templates/functions/file/abspath"
@@ -487,6 +519,10 @@
                       {
                         "text": "file",
                         "link": "/docs/templates/hcl_templates/functions/file/file"
+                      },
+                      {
+                        "text": "filebase64",
+                        "link": "/docs/templates/hcl_templates/functions/file/filebase64"
                       },
                       {
                         "text": "fileexists",
@@ -522,18 +558,26 @@
                         "link": "/docs/templates/hcl_templates/functions/datetime/timestamp"
                       },
                       {
+                        "text": "rfc3339_parse",
+                        "link": "/docs/templates/hcl_templates/functions/datetime/rfc3339_parse"
+                      },
+                      {
+                        "text": "unix_timestamp_parse",
+                        "link": "/docs/templates/hcl_templates/functions/datetime/unix_timestamp_parse"
+                      },
+                      {
                         "text": "legacy_isotime",
                         "link": "/docs/templates/hcl_templates/functions/datetime/legacy_isotime"
+                      },
+                      {
+                        "text": "legacy_strftime",
+                        "link": "/docs/templates/hcl_templates/functions/datetime/legacy_strftime"
                       }
                     ]
                   },
                   {
                     "text": "Hash and Crypto Functions",
                     "items": [
-                      {
-                        "text": "Overview",
-                        "link": "/docs/templates/hcl_templates/functions/crypto/"
-                      },
                       {
                         "text": "bcrypt",
                         "link": "/docs/templates/hcl_templates/functions/crypto/bcrypt"
@@ -564,10 +608,6 @@
                     "text": "UUID Functions",
                     "items": [
                       {
-                        "text": "Overview",
-                        "link": "/docs/templates/hcl_templates/functions/uuid/"
-                      },
-                      {
                         "text": "uuidv4",
                         "link": "/docs/templates/hcl_templates/functions/uuid/uuidv4"
                       },
@@ -580,10 +620,6 @@
                   {
                     "text": "IP Network Functions",
                     "items": [
-                      {
-                        "text": "Overview",
-                        "link": "/docs/templates/hcl_templates/functions/ipnet/"
-                      },
                       {
                         "text": "cidrhost",
                         "link": "/docs/templates/hcl_templates/functions/ipnet/cidrhost"
@@ -605,10 +641,6 @@
                   {
                     "text": "Type Conversion Functions",
                     "items": [
-                      {
-                        "text": "Overview",
-                        "link": "/docs/templates/hcl_templates/functions/conversion/"
-                      },
                       {
                         "text": "can",
                         "link": "/docs/templates/hcl_templates/functions/conversion/can"
@@ -671,7 +703,7 @@
                 "link": "/docs/templates/legacy_json_templates/"
               },
               {
-                "text": "Builders",
+                "text": "builders",
                 "link": "/docs/templates/legacy_json_templates/builders"
               },
               {
@@ -683,15 +715,15 @@
                 "link": "/docs/templates/legacy_json_templates/engine"
               },
               {
-                "text": "Post-Processors",
+                "text": "post-processors",
                 "link": "/docs/templates/legacy_json_templates/post-processors"
               },
               {
-                "text": "Provisioners",
+                "text": "provisioners",
                 "link": "/docs/templates/legacy_json_templates/provisioners"
               },
               {
-                "text": "User Variables",
+                "text": "variables",
                 "link": "/docs/templates/legacy_json_templates/user-variables"
               }
             ]
@@ -723,33 +755,58 @@
             "link": "/docs/builders/"
           },
           {
-            "text": "File",
+            "text": "file",
             "link": "/docs/builders/file"
           },
           {
-            "text": "Null",
+            "text": "null",
             "link": "/docs/builders/null"
           },
           {
-            "text": "ProfitBricks",
-            "link": "/docs/builders/profitbricks"
+            "text": "Custom builders",
+            "link": "/docs/plugins/creation/custom-builders"
           },
           {
-            "text": "Custom",
-            "link": "/docs/builders/custom"
-          },
-          {
-            "text": "Community-Supported",
+            "text": "Community builders",
             "link": "/docs/builders/community-supported"
           }
         ]
       },
       {
-        "text": "Data Sources",
+        "text": "Data sources reference",
         "items": [
           {
             "text": "Overview",
             "link": "/docs/datasources/"
+          },
+          {
+            "text": "HCP Packer",
+            "items": [
+              {
+                "text": "Overview",
+                "link": "/docs/datasources/hcp/"
+              },
+              {
+                "text": "hcp-packer-version",
+                "link": "/docs/datasources/hcp/hcp-packer-version"
+              },
+              {
+                "text": "hcp-packer-artifact",
+                "link": "/docs/datasources/hcp/hcp-packer-artifact"
+              },
+              {
+                "text": "hcp-packer-iteration",
+                "link": "/docs/datasources/hcp/hcp-packer-iteration"
+              },
+              {
+                "text": "hcp-packer-image",
+                "link": "/docs/datasources/hcp/hcp-packer-image"
+              }
+            ]
+          },
+          {
+            "text": "http",
+            "link": "/docs/datasources/http"
           }
         ]
       },
@@ -761,44 +818,40 @@
             "link": "/docs/provisioners/"
           },
           {
-            "text": "Breakpoint",
+            "text": "breakpoint",
             "link": "/docs/provisioners/breakpoint"
           },
           {
-            "text": "File",
+            "text": "file",
             "link": "/docs/provisioners/file"
           },
           {
-            "text": "InSpec",
-            "link": "/docs/provisioners/inspec"
+            "text": "hcp-sbom",
+            "link": "/docs/provisioners/hcp-sbom"
           },
           {
-            "text": "PowerShell",
+            "text": "powershell",
             "link": "/docs/provisioners/powershell"
           },
           {
-            "text": "Salt Masterless",
-            "link": "/docs/provisioners/salt-masterless"
-          },
-          {
-            "text": "Shell",
+            "text": "shell",
             "link": "/docs/provisioners/shell"
           },
           {
-            "text": "Shell (Local)",
+            "text": "shell-Local",
             "link": "/docs/provisioners/shell-local"
           },
           {
-            "text": "Windows Shell",
+            "text": "windows-shell",
             "link": "/docs/provisioners/windows-shell"
           },
           {
-            "text": "Windows Restart",
+            "text": "windows-restart",
             "link": "/docs/provisioners/windows-restart"
           },
           {
             "text": "Custom",
-            "link": "/docs/provisioners/custom"
+            "link": "/docs/plugins/creation/custom-provisioners"
           },
           {
             "text": "Community-Supported",
@@ -830,6 +883,10 @@
             "link": "/docs/post-processors/manifest"
           },
           {
+            "text": "Provenance",
+            "link": "/docs/post-processors/provenance"
+          },
+          {
             "text": "Shell (Local)",
             "link": "/docs/post-processors/shell-local"
           },
@@ -841,21 +898,59 @@
       },
       {
         "text": "Installing Packer",
-        "link": "/docs/install"
+        "link": "https://developer.hashicorp.com/packer/install"
       },
       {
         "text": "Configuring Packer",
         "link": "/docs/configure"
       },
       {
-        "text": "Packer Plugins",
+        "text": "Release notes",
+        "items": [
+          {
+            "text": "v1.11",
+            "link": "/docs/release-notes/v1_11"
+          },
+          {
+            "text": "v1.12",
+            "link": "/docs/release-notes/v1_12"
+          },
+          {
+            "text": "v1.13",
+            "link": "/docs/release-notes/v1_13"
+          }
+        ]
+      },
+      {
+        "text": "Upgrades",
+        "items": [
+          {
+            "text": "Upgrade to v1.11",
+            "link": "/docs/upgrade/v1_11"
+          },
+          {
+            "text": "Upgrade to v1.12",
+            "link": "/docs/upgrade/v1_12"
+          },
+          {
+            "text": "Upgrade to v1.13",
+            "link": "/docs/upgrade/v1_13"
+          }
+        ]
+      },
+      {
+        "text": "Plugins",
         "items": [
           {
             "text": "Overview",
             "link": "/docs/plugins/"
           },
           {
-            "text": "Extending Packer",
+            "text": "Installing Plugins",
+            "link": "/docs/plugins/install"
+          },
+          {
+            "text": "Developing Plugins",
             "items": [
               {
                 "text": "Overview",
@@ -876,14 +971,26 @@
               {
                 "text": "Custom Data Sources",
                 "link": "/docs/plugins/creation/custom-datasources"
+              },
+              {
+                "text": "HCP Packer Support",
+                "link": "/docs/plugins/creation/hcp-support"
+              },
+              {
+                "text": "Plugin Loading Specification",
+                "link": "/docs/plugins/creation/plugin-load-spec"
               }
             ]
-          },
-          {
-            "text": "Packer Integration Program",
-            "link": "/docs/plugins/packer-integration-program"
           }
         ]
+      },
+      {
+        "text": "Integration Program",
+        "link": "/docs/partnerships"
+      },
+      {
+        "text": "Community Tools",
+        "link": "/docs/community-tools"
       },
       {
         "text": "Debugging",
@@ -972,6 +1079,19 @@
             "link": "/guides/packer-on-cicd/upload-images-to-artifact"
           }
         ]
+      }
+    ]
+  },
+  {
+    "base": "/plugins/",
+    "items": [
+      {
+        "text": "Overview",
+        "link": "/plugins/"
+      },
+      {
+        "text": "Overview",
+        "link": "/plugins/"
       }
     ]
   }

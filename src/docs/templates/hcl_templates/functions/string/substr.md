@@ -1,8 +1,8 @@
 ---
-title: substr - Functions - Configuration Language
+title: substr function reference
 description: |-
-  The substr function extracts a substring from a given string by offset and
-  length.
+  The `substr` function extracts a substring from a given string using an offset and
+  length. 
 ---
 
 # `substr` Function

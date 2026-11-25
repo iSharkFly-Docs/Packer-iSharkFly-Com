@@ -1,8 +1,8 @@
 ---
-title: cidrsubnet - Functions - Configuration Language
+title: cidrsubnet function reference
 description: |-
-  The cidrsubnet function calculates a subnet address within a given IP network
-  address prefix.
+  The `cidrsubnet` function calculates a subnet address within a given IP network
+  address prefix. 
 ---
 
 # `cidrsubnet` Function

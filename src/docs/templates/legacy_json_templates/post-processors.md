@@ -1,10 +1,13 @@
 ---
 description: |
-  The post-processor section within a template configures any post-processing
-  that will be done to images built by the builders. Examples of post-processing
-  would be compressing files, uploading artifacts, etc.
-title: Post-Processors - Templates
+  The `post-processor` block defines actions to perform on images after Packer builds them. Learn how to configure the `post-processor` block in JSON templates.
+title: post-processors reference for JSON templates
 ---
+
+# `post-processors` reference for JSON templates
+
+This documentation describes how to configure a `post-processor` block in JSON
+templates. Refer to the documentation for each post-processor type for their specific configuration options.
 
 ::: info
 **Note:** This page is about older-style JSON Packer templates. JSON
@@ -12,23 +15,17 @@ templates are still supported by the Packer core, but new features added to the
 Packer core may not be implemented for JSON templates. We recommend you
 transition to HCL templates as soon as is convenient for you, in order to have
 the best possible experience with Packer. To help you upgrade your templates,
-we have written an [hcl2_upgrade command](/docs/commands/hcl2_upgrade) command.
+we have written an [hcl2_upgrade command](/docs/commands/hcl2_upgrade).
 :::
 
-# Template Post-Processors
+## Description
 
-The post-processor section within a template configures any post-processing
-that will be done to images built by the builders. Examples of post-processing
-would be compressing files, uploading artifacts, etc.
+The `post-processor` block defines additional actions to perform on the images built by the builders. For example, you can configure the `post-processor` to compress files and upload artifacts.
 
 Post-processors are _optional_. If no post-processors are defined within a
 template, then no post-processing will be done to the image. The resulting
 artifact of a build is just the image outputted by the builder.
 
-This documentation page will cover how to configure a post-processor in a
-template. The specific configuration options available for each post-processor,
-however, must be referenced from the documentation for that specific
-post-processor.
 
 Within a template, a section of post-processor definitions looks like this:
 
@@ -180,5 +177,5 @@ option _ignores_ post-processors.
 The values within `only` or `except` are _build names_, not builder types.
 Name is a required block label in HCL, but in legacy JSON, build names default
 to the types of their builders (e.g. `docker` or `amazon-ebs` or
-`virtualbox-iso`, unless a specific `name` attribute is specified within the
+`virtualbox-iso`), unless a specific `name` attribute is specified within the
 configuration.

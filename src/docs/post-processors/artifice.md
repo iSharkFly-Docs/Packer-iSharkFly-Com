@@ -1,23 +1,13 @@
 ---
 description: >
-  The artifice post-processor overrides the artifact list from an upstream
-
-  builder or post-processor. All downstream post-processors will see the new
-
-  artifacts you specify. The primary use-case is to build artifacts inside a
-
-  packer builder -- for example, spinning up an EC2 instance to build a docker
-
-  container -- and then extracting the docker container and throwing away the
-  EC2
-
-  instance.
-title: Artifice - Post-Processors
+  The `artifice` post-processor overrides the artifact list from an upstream builder or post-processor. Use it to build artifacts inside a Packer builder, such as starting an EC2 instance to build a Docker container, but only keep the Docker container's artifacts.
+title: artifice post-processor reference
 ---
 
-# Artifice Post-Processor
+<Badge type="tip" text="Official" />
 
-Type: `artifice`
+# `artifice` post-processor
+
 Artifact BuilderId: `packer.post-processor.artifice`
 
 The artifice post-processor overrides the artifact list from an upstream
@@ -31,7 +21,7 @@ post-processors.
 A major benefit of this is that you can modify builder
 artifacts using shell-local and pass those modified artifacts into
 post-processors that may not have worked with the original builder.
-For example, maybe you want to export a docker container from an amazon-ebs
+For example, maybe you want to export a Docker container from an amazon-ebs
 builder and then use Docker-push to put that Docker container into your Docker
 Hub account.
 
@@ -77,16 +67,17 @@ The configuration allows you to specify which files comprise your artifact.
 
 ### Example Configuration
 
-This minimal example:
+You can use Packer to deploy HashiCorp Consul, which is a service discovery and service mesh solution. Refer to the [Consul website](https://www.hashicorp.com/en/products/consul) for additional information. 
 
-1.  Spins up a cloned VMware virtual machine
-2.  Installs a [consul](https://www.consul.io/) release
-3.  Downloads the consul binary
-4.  Packages it into a `.tar.gz` file
-5.  Uploads it to S3.
+In this example, Packer uses a minimal configuration to perform the following actions:
 
-VMX is a fast way to build and test locally, but you can easily substitute
-another builder.
+1. Spins up a cloned VMware virtual machine
+1. Installs a Consul release. 
+1. Downloads the Consul binary.
+1. Packages Consul into a `.tar.gz` file.
+1. Uploads Consul to S3.
+
+VMX is a fast way to build and test locally, but you can substitute a different builder.
 
 ```json
 {
@@ -166,4 +157,4 @@ result.
 ```
 
 You can create multiple post-processor chains to handle multiple builders (for
-example, building linux and windows binaries during the same build).
+example, building Linux and Windows binaries during the same build).

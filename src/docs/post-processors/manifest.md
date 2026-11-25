@@ -1,19 +1,19 @@
 ---
 description: >
-  The manifest post-processor writes a JSON file with the build artifacts and
-  IDs from a packer run.
-title: Manifest - Post-Processors
+  The `manifest` post-processor creates a JSON file that contains data about a Packer build's artifacts, letting you track a run's outputs.
+title: manifest post-processor reference
 ---
 
-# Manifest Post-Processor
+<Badge type="tip" text="Official" />
 
-Type: `manifest`
+# `manifest` post-processor
+
 Artifact BuilderId: `packer.post-processor.manifest`
 
 The manifest post-processor writes a JSON file with a list of all of the
 artifacts packer produces during a run. If your Packer template includes
 multiple builds, this helps you keep track of which output artifacts (files,
-AMI IDs, docker containers, etc.) correspond to each build.
+AMI IDs, Docker containers, etc.) correspond to each build.
 
 The manifest post-processor is invoked each time a build completes and
 _updates_ data in the manifest file. Builds are identified by name and type,
@@ -42,7 +42,7 @@ post-processors such as Docker and Artifice.
 - `strip_time` (bool) - Don't write the `build_time` field from the output.
 
 - `custom_data` (map[string]string) - Arbitrary data to add to the manifest. This is a [template
-  engine](https://packer.io/docs/templates/legacy_json_templates/engine.html). Therefore, you
+  engine](/docs/templates/legacy_json_templates/engine). Therefore, you
   may use user variables and template functions in this field.
 
 <!-- End of code generated from the comments of the Config struct in post-processor/manifest/post-processor.go; -->
@@ -57,9 +57,17 @@ is not a behavior anyone should ever expect.
 
 The minimal way to use the manifest post-processor is by just writing its definition, like:
 
-<Tabs groupId="template-format" :tabs="[{label:'JSON',value:'t0'},{label:'HCL2',value:'t1'}]">
+<Tabs groupId="template-format" :tabs="[{label:'HCL2',value:'t0'},{label:'JSON',value:'t1'}]">
 
 <TabItem value="t0">
+
+```hcl
+post-processor "manifest" {}
+```
+
+</TabItem>
+
+<TabItem value="t1">
 
 ```json
 {
@@ -73,21 +81,27 @@ The minimal way to use the manifest post-processor is by just writing its defini
 
 </TabItem>
 
-<TabItem value="t1">
-
-```hcl
-post-processor "manifest" {}
-```
-
-</TabItem>
-
 </Tabs>
 
 A more complete example:
 
-<Tabs groupId="template-format" :tabs="[{label:'JSON',value:'t0'},{label:'HCL2',value:'t1'}]">
+<Tabs groupId="template-format" :tabs="[{label:'HCL2',value:'t0'},{label:'JSON',value:'t1'}]">
 
 <TabItem value="t0">
+
+```hcl
+post-processor "manifest" {
+    output = "manifest.json"
+    strip_path = true
+    custom_data = {
+      my_custom_data = "example"
+    }
+}
+```
+
+</TabItem>
+
+<TabItem value="t1">
 
 ```json
 {
@@ -101,20 +115,6 @@ A more complete example:
       }
     }
   ]
-}
-```
-
-</TabItem>
-
-<TabItem value="t1">
-
-```hcl
-post-processor "manifest" {
-    output = "manifest.json"
-    strip_path = true
-    custom_data = {
-      my_custom_data = "example"
-    }
 }
 ```
 
@@ -154,9 +154,33 @@ artifacts from the manifest by using `packer_run_uuid`.
 
 The above manifest was generated with the following template:
 
-<Tabs groupId="template-format" :tabs="[{label:'JSON',value:'t0'},{label:'HCL2',value:'t1'}]">
+<Tabs groupId="template-format" :tabs="[{label:'HCL2',value:'t0'},{label:'JSON',value:'t1'}]">
 
 <TabItem value="t0">
+
+```hcl
+source "docker" "docker"{
+    image = "ubuntu:latest"
+    export_path = "packer_example"
+    run_command = ["-d", "-i", "-t", "--entrypoint=/bin/bash", "{{.Image}}"]
+}
+
+build {
+    sources = ["docker.docker"]
+
+    post-processor "manifest" {
+        output = "manifest.json"
+        strip_path = true
+        custom_data = {
+          my_custom_data = "example"
+        }
+    }
+}
+```
+
+</TabItem>
+
+<TabItem value="t1">
 
 ```json
 {
@@ -183,44 +207,20 @@ The above manifest was generated with the following template:
 
 </TabItem>
 
-<TabItem value="t1">
-
-```hcl
-source "docker" "docker"{
-    image = "ubuntu:latest"
-    export_path = "packer_example"
-    run_command = ["-d", "-i", "-t", "--entrypoint=/bin/bash", "{{.Image}}"]
-}
-
-build {
-    sources = ["docker.docker"]
-
-    post-processor "manifest" {
-        output = "manifest.json"
-        strip_path = true
-        custom_data = {
-          my_custom_data = "example"
-        }
-    }
-}
-```
-
-</TabItem>
-
 </Tabs>
 
 Example usage:
 
 The manifest can be very useful for cleaning up old artifacts, or printing
 important values to logs. The following example uses jq, a command-line tool for
-parsing json output, to find and echo the AWS ami-id of an ami created by a
+parsing json output, to find and echo the AWS ami-id of an AMI created by a
 build.
 
 ```bash
 
 #!/bin/bash
 
-AMI_ID=$(jq -r '.builds[-1].artifact_id' manifest.json | cut -d ":" -f2)
+AMI_ID=$(jq -r '.builds[-1].artifact_id | split(":") | .[1]' manifest.json)
 echo $AMI_ID
 
 ```

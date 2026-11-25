@@ -1,8 +1,8 @@
 ---
-title: join - Functions - Configuration Language
+title: join function reference
 description: |-
-  The join function produces a string by concatenating the elements of a list
-  with a given delimiter.
+  The `join` function produces a string by concatenating the elements of a list
+  with a given delimiter. 
 ---
 
 # `join` Function

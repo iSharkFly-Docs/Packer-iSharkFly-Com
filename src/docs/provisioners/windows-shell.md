@@ -1,16 +1,16 @@
 ---
 description: |
-  The windows-shell Packer provisioner runs commands on Windows using the cmd
-  shell.
-title: Windows Shell - Provisioners
+  The `windows-shell` provisioner runs commands on Windows using the `cmd`
+  shell. Learn how to use the `windows-shell` provisioner.
+title: windows-shell provisioner reference
 ---
 
-# Windows Shell Provisioner
+<Badge type="tip" text="Official" />
 
-Type: `windows-shell`
+# `windows-shell` provisioner
 
-The windows-shell Packer provisioner runs commands on a Windows machine using
-`cmd`. It assumes it is running over WinRM.
+The `windows-shell` Packer provisioner runs commands on a Windows machine using
+`cmd`. The provisioner is designed to communicate with machines running WinRM.
 
 ## Basic Example
 
@@ -73,6 +73,11 @@ Optional parameters:
 
 - `valid_exit_codes` (list of ints) - Valid exit codes for the script. By
   default this is just 0.
+
+- `env` (map of strings) - A map of key/value pairs to inject prior to the
+  execute_command. Packer injects some environmental variables by default into
+  the environment, as well, which are covered in the section below. Duplicate
+  `env` settings override `environment_vars` settings.
 
 - `environment_vars` (array of strings) - An array of key/value pairs to
   inject prior to the execute_command. The format should be `key=value`.

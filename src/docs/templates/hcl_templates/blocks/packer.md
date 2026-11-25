@@ -1,29 +1,16 @@
 ---
-title: packer - Blocks
+title: packer block reference
 description: |-
-  The "packer" configuration section is used to configure some behaviors
-  of Packer itself.
+  The `packer` block configures Packer behavior. Learn how to configure the `packer` in Packer templates written in HCL.  
 ---
 
-# Packer Settings
+# `packer` block
 
-::: info
-**Note:** This page is about HCL2 Packer templates. HCL2 templates
-were first introduced as a beta feature into Packer version 1.5. As of v1.7,
-HCL2 support is no longer in beta, and is the preferred way to write Packer
-configuration. For the old-style stable configuration language see
-[template docs](/docs/templates/legacy_json_templates/). As of v1.6.2, you can
-convert your legacy JSON template into an HCL2 config file using the
-[hcl2_upgrade command](/docs/commands/hcl2_upgrade).
-:::
+This topic provides reference information about the `packer` block. 
 
-::: info
-**Note:** The `packer` block is only available in Packer v1.6.5 and later.
-:::
+## Description
 
-The `packer` configuration block type is used to configure some
-behaviors of Packer itself, such as the minimum required Packer version needed to
-apply your configuration.
+The `packer` block configures Packer version requirements and specifies which plugins to install upon initialization.
 
 ## Packer Block Syntax
 
@@ -64,7 +51,7 @@ later.
 :::
 
 The `required_plugins` block specifies all of the plugins required by the
-current config, mapping each local plugin name to a source address and a
+current template, mapping each local plugin name to a source address and a
 version constraint.
 
 ```hcl
@@ -78,7 +65,34 @@ packer {
 }
 ```
 
-For more information, see [Plugins](/docs/plugins/).
+Using the `required_plugins` block to codify the plugins required for invoking a 
+`packer build` on your template(s) is a great way to ensure consistent builds across
+different platforms or hosts.
+
+The block codifies two pieces of information that we've found critical to ensure reproducible builds:
+1. **The source of a required plugin** indicates to users where a plugin where a plugin was downloaded from
+and where to reach out if there are issues with the plugin. 
+1. **The version of a required plugin** indicates to users the exact or minimum version needed for the build. 
+This is a great way to pin approved versions of a plugin that can be installed across your environment or team.
+
+For more information on plugins, refer to [Plugins](/docs/plugins/).
+
+### Define plugin source
+Specify the path to the plugin source code in the `source` field using the following format:
+
+`<HOSTNAME>/[SUBFOLDER/]<NAMESPACE>/<TYPE>`
+
+- `<Hostname>`: Specifies the hostname of the location or service that distributes the plugin. Use `github.com` for plugins published as GitHub releases. Any other hostname must be an HTTPS endpoint that serves the required plugin-source directory structure, such as an internal mirror or artifact repository. Refer to the following documentation for additional information.
+  - [Host your own plugin source](/docs/plugins/install#host-your-own-plugin-source)
+  - [`init` command](/docs/commands/init)
+  - [`plugins install`](/docs/commands/plugins/install)
+- `<Subfolder>`: The subfolder path segment is an optional part of the address that enables you to download plugin sources from custom addresses. You can specify a source containing up to 13 total path segments.   
+- `<Namespace>`: An organizational namespace within the specified host. This often is the organization that publishes the plugin.
+  Type: A short name for the platform or system the plugin manages. The type is usually the plugin's preferred local name.
+
+For example, the value of the `source` field for a plugin named `myawesomecloud` is `github.com/hashicorp/myawesomecloud` if it belongs to the `hashicorp` namespace on the host `github.com`.
+
+The actual repository that `myawesomecloud` comes from must always have the name format `github.com/hashicorp/packer-plugin-myawesomecloud`, but the `required_plugins` block omits the redundant `packer-plugin-` repository prefix for brevity.
 
 ## Version Constraints
 

@@ -1,8 +1,7 @@
 ---
-title: basename - Functions - Configuration Language
+title: basename function reference
 description: |-
-  The basename function removes all except the last portion from a filesystem
-  path.
+  The `basename` function removes parts of a filesystem path except for the last portion. Learn how to use the `basename` function in Packer templates.
 ---
 
 # `basename` Function
@@ -24,7 +23,7 @@ it uses backslash `\` as the path segment separator. On Unix systems, the slash
 Referring directly to filesystem paths in resource arguments may cause
 spurious diffs if the same configuration is applied from multiple systems or on
 different host operating systems. We recommend using filesystem paths only
-for transient values, such as the argument to [`file`](/docs/templates/hcl_templates/functions/file/) (where
+for transient values, such as the argument to [`file`](/docs/templates/hcl_templates/functions/) (where
 only the contents are then stored) or in `connection` and `provisioner` blocks.
 
 ## Examples

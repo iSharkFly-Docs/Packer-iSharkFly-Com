@@ -1,22 +1,15 @@
 ---
 title: Data Sources
 description: >-
-  Data sources allow data to be fetched or computed for use elsewhere in local variables and
-  build sources configuration. Use of data sources
-  allows a Builder to make use of information defined outside of Packer.
+  A `data` block defines a data source that instructs Packer to query data defined outside of Packer for use in builds and sources. Learn how to configure `data` blocks to define data sources.
 ---
 
-# Data Sources
+# Data sources reference
 
-::: info
-**Note:** Data Sources is a feature included in Packer 1.7 and later.
-:::
+This topic describes how to use the `data` block to configure data sources in your HCL Packer templates. The `data` block instructs Packer to fetch or compute data for use in [`locals` blocks](/docs/templates/hcl_templates/blocks/locals) and
+[`source` blocks](/docs/templates/hcl_templates/blocks/source) so that builders can use of information defined outside of Packer.
 
-Data sources allow data to be fetched or computed for use elsewhere in [locals](/docs/templates/hcl_templates/blocks/locals) and
-[sources](/docs/templates/hcl_templates/blocks/source) configuration.
-Use of data sources allows a Builder to make use of information defined outside of Packer.
-
-# Using Data Sources
+## Using data sources
 
 A data source is declared using a data block, and the configuration looks like the following:
 
@@ -32,14 +25,14 @@ data "amazon-ami" "example" {
 }
 ```
 
-A data block requests that Packer read from a given data source ("amazon-ami") and export the result under the given
-local name ("example"). The name is used to refer to this data source from elsewhere in the same Packer configuration.
+A `data` block requests that Packer read from a given data source (`"amazon-ami"`) and export the result under the given
+local name (`"example"`). The name is used to refer to this data source from elsewhere in the same Packer configuration.
 
 The data block creates a data instance of the given _type_ (first block label) and _name_ (second block label).
 The combination of the type and name must be unique within a configuration.
 
-Within the block (the `{ }`) is the configuration for the data instance. The configuration is dependent on the type,
-and is documented for each data source in the [data sources](/docs/datasources/) section.
+Within the block (the `{ }`) is the configuration for the data instance. The configuration is dependent on the data source type,
+and is documented for each data source. For example the configuration of the `amazon-ami` data source can be found at [plugins/datasources/amazon/ami](https://developer.hashicorp.com/packer/plugins/datasources/amazon/ami#configuration-reference).
 
 A data source can output one or more attributes, which can be used by adding their key name to the data source unique
 identifier, like `data.<TYPE>.<NAME>.<ATTRIBUTE>`.
@@ -72,10 +65,54 @@ locals {
 ```hcl
 // in a source
 source "amazon-ebs" "basic-example" {
-  source_ami = locals.source_ami
+  source_ami = local.source_ami
   // ...
 }
 ```
+
+## Known limitations
+
+At this present time the use of locals within data sources such as the example below is not supported. 
+
+```hcl
+locals {
+  cloud_owners           = ["happycloud"]
+  cloud_base_filter_name = "cloud-hvm-2.0.*-x86_64-gp2"
+}
+
+data "happycloud" "happycloud-linux2-east" {
+  filters = {
+    name = local.cloud_base_filter_name
+  }
+  most_recent = true
+  owners = local.cloud_owners
+}
+```
+
+Locals can reference data sources but data sources can not reference locals to avoid cyclic dependencies, where a local
+may reference a data source that references the same local or some other locals variable. The preferred method, at this time,
+for referencing user input data within a data source is to use the `variable` block. 
+
+```hcl
+variable "cloud_base_filter_name" {
+  type     = string
+  default  = "cloud-hvm-2.0.*-x86_64-gp2"
+}
+
+variable "cloud_owners" {
+  type     = string
+  default  = "happycloud"
+}
+
+data "happycloud" "happycloud-linux2-east" {
+  filters = {
+    name =  var.cloud_base_filter_name
+  }
+  most_recent = true
+  owners = var.cloud_owners
+}
+```
+
 
 ## Related
 

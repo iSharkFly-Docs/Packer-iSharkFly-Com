@@ -1,17 +1,13 @@
 ---
 description: |
-  Post-processors run after the image is built by the builder and provisioned by
-  the provisioner(s).
-title: Post-Processors
+  Post-processors are programs that you can run after Packer builds and provisions an image. Use post-processors to upload artifacts and repackage files.
+title: Post-processors overview
 ---
 
-# Post-Processors
+# Post-processors overview
 
-Post-processors run after the image is built by the builder and provisioned by
-the provisioner(s). Post-processors are optional, and they can be used to
-upload artifacts, re-package, or more. For more information about
-post-processors, please choose an option from the sidebar.
+Post-processors run after builders and provisioners. Post-processors are optional, and you can use them to upload artifacts, re-package files, and more. The documentation includes a page for each type of post-processor.
 
-See [`post-processor`](/docs/templates/hcl_templates/blocks/build/post-processor) and
+Refer to the [`post-processor`](/docs/templates/hcl_templates/blocks/build/post-processor) and
 [`post-processors`](/docs/templates/hcl_templates/blocks/build/post-processors)
-blocks documentations to learn more about working with post-processors.
+blocks documentation to learn more about working with post-processors.

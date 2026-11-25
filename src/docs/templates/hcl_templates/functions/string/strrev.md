@@ -1,6 +1,6 @@
 ---
-title: strrev - Functions - Configuration Language
-description: The strrev function reverses a string.
+title: strrev function reference
+description: The `strrev` function reverses a string. 
 ---
 
 # `strrev` Function

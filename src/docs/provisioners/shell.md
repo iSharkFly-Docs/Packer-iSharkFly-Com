@@ -1,18 +1,14 @@
 ---
 description: |
-  The shell Packer provisioner provisions machines built by Packer using shell
-  scripts. Shell provisioning is the easiest way to get software installed and
-  configured on a machine.
-title: Shell - Provisioners
+  The `shell` Packer provisioner runs shell scripts on the machine Packer builds. Use the `shell` provisioner to install and configure software on a machine.
+title: shell provisioner reference
 ---
 
-# Shell Provisioner
+<Badge type="tip" text="Official" />
 
-Type: `shell`
+# `shell` provisioner
 
-The shell Packer provisioner provisions machines built by Packer using shell
-scripts. Shell provisioning is the easiest way to get software installed and
-configured on a machine.
+The `shell` Packer provisioner runs shell scripts on the machine Packer builds. Use the `shell` provisioner to install and configure software on a machine.
 
 ::: info
 **Building Windows images?** You probably want to use the
@@ -81,6 +77,11 @@ Optional parameters:
 
 - `valid_exit_codes` (list of ints) - Valid exit codes for the script. By
   default this is just 0.
+
+- `env` (map of strings) - A map of key/value pairs to inject prior to the
+  execute_command. Packer injects some environmental variables by default into
+  the environment, as well, which are covered in the section below. Duplicate
+  `env` settings override `environment_vars` settings.
 
 - `environment_vars` (array of strings) - An array of key/value pairs to
   inject prior to the execute_command. The format should be `key=value`.

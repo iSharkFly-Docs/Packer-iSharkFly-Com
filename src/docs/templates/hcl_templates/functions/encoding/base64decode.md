@@ -1,6 +1,6 @@
 ---
-title: base64decode - Functions - Configuration Language
-description: The base64decode function decodes a string containing a base64 sequence.
+title: base64decode function reference
+description: The `base64decode` function decodes a base64-encoded string. 
 ---
 
 # `base64decode` Function

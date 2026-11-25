@@ -1,21 +1,14 @@
 ---
-title: Expressions - Configuration Language
+title: HCL expressions reference
 description: |-
-  HCL allows the use of expressions to access data exported
-  by sources and to transform and combine that data to produce other values.
+  HCL expressions provide access to data exported by data sources and transforms and combines the data into other values. Learn how to use HCL expressions in Packer templates.
 ---
 
-# Expressions
+# HCL expressions reference
 
-::: info
-**Note:** This page is about HCL2 Packer templates. HCL2 templates
-were first introduced as a beta feature into Packer version 1.5. As of v1.7,
-HCL2 support is no longer in beta, and is the preferred way to write Packer
-configuration. For the old-style stable configuration language see
-[template docs](/docs/templates/legacy_json_templates/). As of v1.6.2, you can
-convert your legacy JSON template into an HCL2 config file using the
-[hcl2_upgrade command](/docs/commands/hcl2_upgrade).
-:::
+This topic provides reference information about expressions you can use in HCL templates for Packer.
+
+## Introduction
 
 _Expressions_ are used to refer to or compute values within a configuration.
 The simplest expressions are just literal values, like `"hello"` or `5`, but
@@ -150,6 +143,106 @@ The following named values are available:
 For a full list of available functions, see [the function
 reference](/docs/templates/hcl_templates/functions/).
 
+## Conditional Expressions
+
+A conditional expression uses the value of a boolean expression to select one of
+two values. This is a compact way to express `if-then-else` logic inside an
+expression.
+
+The syntax for a conditional expression is:
+
+```hcl
+condition ? true_val : false_val
+```
+
+If `condition` is `true`, the expression returns `true_val`. If `condition` is
+`false`, it returns `false_val`. The `true_val` and `false_val` arguments must
+be of compatible types.
+
+### Examples
+
+Here are some examples of how to use conditional expressions.
+
+1.  Setting a Default Value
+
+    You can use a conditional to provide a default value for a variable that
+    can also be customized.
+
+    ```hcl
+    locals {
+      # Set the region to the value of var.region if it is not empty.
+      # Otherwise, use a default value.
+      region = var.region != "" ? var.region : "us-east-1"
+    }
+    ```
+
+2.  Dynamically Omitting an Argument
+
+    You can use a `null` value to dynamically omit an argument from a source.
+    This is a common pattern to effectively "turn off" or prevent an argument
+    from being set.
+
+    ```hcl
+    variable "use_http" {
+      type        = bool
+      description = "Whether to use HTTP for file transfer."
+      default     = true
+    }
+
+    source "example" "foo" {
+      # The http_directory argument is only set if var.use_http is true.
+      # If false, http_directory will be unset.
+      http_directory = var.use_http ? "/path/to/files" : null
+    }
+    ```
+
+    This can also be used to set one of two mutually exclusive arguments:
+
+    ```hcl
+    source "builder" "example" {
+      # If var.use_http is true, http_content is set and cd_content is null.
+      # If var.use_http is false, http_content is null and cd_content is set.
+      http_content = var.use_http ? local.http_files : null
+      cd_content   = !var.use_http ? local.cd_files : null
+    }
+    ```
+
+### Readability and Recommended Practices
+
+While powerful, conditional expressions can lead to complex or hard-to-read
+configurations if not used carefully.
+
+  * **Prioritize Clarity:** When a conditional expression becomes very long or
+    involves multiple nested conditions, consider breaking it down.
+
+  * **Leverage `locals` for Complexity:** For more intricate conditional logic,
+    define the result in a `local` variable. This improves readability in the
+    main `source` or `provisioner` blocks where the `local` is consumed.
+
+    **Example:**
+
+    ```hcl
+    locals {
+      # Determine the kickstart file based on the build environment.
+      kickstart_config_path = var.environment == "production" ?
+                              "config/prod-ks.cfg" :
+                              (var.environment == "staging" ?
+                               "config/stage-ks.cfg" :
+                               "config/dev-ks.cfg")
+    }
+
+    source "builder" "example" {
+      # ...
+      # Use the pre-determined kickstart path.
+      http_content = file(local.kickstart_config_path)
+      # ...
+    }
+    ```
+
+  * **Use `null` to Omit Arguments:** As demonstrated in the examples,
+    using `null` is the idiomatic way to prevent an argument from being set or
+    to effectively "turn off" a setting based on a condition.
+
 ## `for` Expressions
 
 A _`for` expression_ creates a complex type value by transforming
@@ -211,7 +304,7 @@ A _splat expression_ provides a more concise way to express a common operation
 that could otherwise be performed with a `for` expression.
 
 If `var.list` is a list of objects that all have an attribute `id`, then a list
-of the ids could be produced with the following `for` expression:
+of the IDs could be produced with the following `for` expression:
 
 ```hcl
 [for o in var.list : o.id]
@@ -241,7 +334,7 @@ The above expression is equivalent to the following `for` expression:
 
 Splat expressions are for lists only (and thus cannot be used [to reference
 resources created with
-`for_each`](https://www.terraform.io/docs/configuration/resources.html#referring-to-instances), which
+`for_each`](https://developer.hashicorp.com/terraform/docs/configuration/resources#referring-to-instances), which
 are represented as maps). However, if a splat expression is applied to a value
 that is _not_ a list or tuple then the value is automatically wrapped in a
 single-element list before processing.
@@ -256,16 +349,16 @@ may not produce a tuple value:
 aws_instance.example[*].id
 ```
 
-The above will produce a list of ids whether `aws_instance.example` has `count`
+The above will produce a list of IDs whether `aws_instance.example` has `count`
 set or not, avoiding the need to revise various other expressions in the
 configuration when a particular resource switches to and from having `count`
 set.
 
 ## `dynamic` blocks
 
-Within top-level block constructs like sources, expressions can usually be used
-only when assigning a value to an argument using the `name = expression` or `key = expression` form. This covers many uses, but some source types include
-repeatable _nested blocks_ in their arguments, which do not accept expressions:
+Within top-level block constructs like [source](/docs/templates/hcl_templates/blocks/source), expressions
+can usually be used only when assigning a value to an argument using the `name = expression` or `key = expression` form.
+This covers many uses, but some source types include repeatable _nested blocks_ in their arguments, which do not accept expressions:
 
 ```hcl
 source "amazon-ebs" "example" {
@@ -278,7 +371,7 @@ source "amazon-ebs" "example" {
 ```
 
 You can dynamically construct repeatable nested blocks like `tag` using a
-special `dynamic` block type, which is supported anywhere, example:
+special `dynamic` block type, which is supported in top-level block constructs, example:
 
 ```hcl
 locals {
@@ -335,8 +428,8 @@ The iterator object (`tag` in the example above) has two attributes:
   `value` and should not be used.
 - `value` is the value of the current element.
 
-A `dynamic` block can only generate arguments that belong to the source type,
-data source or provisioner being configured.
+A `dynamic` block can only generate arguments for nested blocks that belong to
+the source type, data source, or provisioner being configured.
 
 The `for_each` value must be a map or set with one element per desired nested
 block. If you need to declare resource instances based on a nested data
@@ -437,3 +530,54 @@ beginning a template sequence, double the leading character: `$${` or `%%{`.
 Within quoted and heredoc string expressions, the sequences `${` and `%{` begin
 _template sequences_. Templates let you directly embed expressions into a string
 literal, to dynamically construct strings from other values.
+
+The following example demonstrates how a template sequence can be used to embed
+the value of a variable into a string that can be used as script content:
+
+```hcl
+locals {
+  packages = ["git", "curl", "vim"]
+
+  install_packages = <<-EOF
+    #!/bin/bash
+    if [ ${length(local.packages)} -eq 0 ]; then
+      echo "No packages to install."
+      exit 1
+    fi
+    apt-get update
+    %{ for package in local.packages ~}
+    apt-get install -y ${package}
+    %{ endfor ~}
+  EOF
+}
+
+source "amazon-ebs" "example" {
+  # ...
+}
+
+build {
+  sources = ["source.amazon-ebs.example"]
+
+  provisioner "shell" {
+    inline = [local.install_packages]
+  }
+}
+```
+
+This can be tested using the `packer console` command:
+
+```shell
+$ packer source.pkr.hcl
+
+> local.install_packages
+
+> #!/bin/bash
+if [ 3 -eq 0 ]; then
+  echo "No packages to install."
+  exit 1
+fi
+apt-get update
+    apt-get install -y git
+    apt-get install -y curl
+    apt-get install -y vim
+```

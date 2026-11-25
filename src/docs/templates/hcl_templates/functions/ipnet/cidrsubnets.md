@@ -1,8 +1,8 @@
 ---
-title: cidrsubnets - Functions - Configuration Language
+title: cidrsubnets function reference
 description: |-
-  The cidrsubnets function calculates a sequence of consecutive IP address
-  ranges within a particular CIDR prefix.
+  The `cidrsubnets` function calculates a sequence of consecutive IP address
+  ranges in a CIDR prefix. 
 ---
 
 # `cidrsubnets` Function

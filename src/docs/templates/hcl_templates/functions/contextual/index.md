@@ -1,4 +1,0 @@
----
-title: Contextual - Functions - Configuration Language
-description: Overview of available Contextual functions
----

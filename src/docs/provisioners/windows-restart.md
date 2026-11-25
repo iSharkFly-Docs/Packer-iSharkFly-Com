@@ -1,15 +1,15 @@
 ---
 description: |
-  The Windows restart provisioner restarts a Windows machine and waits for it to
-  come back up.
-title: Windows Restart - Provisioners
+  The `windows-restart` provisioner restarts a Windows machine and waits for it to
+  come back up. Learn how to use the `windows-restart` provisioner.
+title: windows-restart provisioner reference
 ---
 
-# Windows Restart Provisioner
+<Badge type="tip" text="Official" />
 
-Type: `windows-restart`
+# `windows-restart` provisioner
 
-The Windows restart provisioner initiates a reboot on a Windows machine and
+The `windows-restart` provisioner initiates a reboot on a Windows machine and
 waits for the machine to come back online.
 
 The Windows provisioning process often requires multiple reboots, and this
@@ -77,8 +77,9 @@ Optional parameters:
 - `restart_command` (string) - The command to execute to initiate the
   restart. By default this is `shutdown /r /f /t 0 /c "packer restart"`.
 
-- `restart_check_command` (string) - A command to execute to check if the
-  restart succeeded. This will be done in a loop. Example usage:
+- `restart_check_command` (string) - The command to run after executing `restart_command`
+  to check if the guest machine has restarted. This command will retry until the connection
+  to the guest machine has been restored or `restart_timeout` has exceeded.
 
 <Tabs groupId="template-format" :tabs="[{label:'HCL2',value:'t0'},{label:'JSON',value:'t1'}]">
 

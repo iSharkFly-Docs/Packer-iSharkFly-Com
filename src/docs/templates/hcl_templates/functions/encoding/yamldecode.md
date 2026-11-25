@@ -1,8 +1,7 @@
 ---
-title: yamldecode - Functions - Configuration Language
+title: yamldecode function reference
 description: |-
-  The yamldecode function decodes a YAML string into a representation of its
-  value.
+  The `yamldecode` function decodes a YAML string into its corresponding Packer value.
 ---
 
 # `yamldecode` Function

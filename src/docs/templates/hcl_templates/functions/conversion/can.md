@@ -1,8 +1,7 @@
 ---
-title: can - Functions - Configuration Language
+title: can function reference
 description: |-
-  The can function tries to evaluate an expression given as an argument and
-  indicates whether the evaluation succeeded.
+  The `can` function evaluates an expression and indicates whether it succeeds.
 ---
 
 # `can` Function

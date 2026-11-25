@@ -1,6 +1,6 @@
 ---
-title: pow - Functions - Configuration Language
-description: The pow function raises a number to a power.
+title: pow function reference
+description: The `pow` function raises a number to a power. 
 ---
 
 # `pow` Function

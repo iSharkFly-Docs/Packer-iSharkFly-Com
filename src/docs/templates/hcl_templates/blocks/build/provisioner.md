@@ -1,22 +1,20 @@
 ---
 description: |
-  The provisioner block defines how a provisioner is configured.
-title: provisioner - build - Blocks
+  The `provisioner` block defines how to configure a provisioner. Learn how to configure `provisioner` blocks in your templates.
+title: provisioner block reference
 ---
 
-# The `provisioner` block
+# `provisioner` block
 
-::: info
-**Note:** This page is about HCL2 Packer templates. HCL2 templates
-were first introduced as a beta feature into Packer version 1.5. As of v1.7,
-HCL2 support is no longer in beta, and is the preferred way to write Packer
-configuration. For the old-style stable configuration language see
-[template docs](/docs/templates/legacy_json_templates/). As of v1.6.2, you can
-convert your legacy JSON template into an HCL2 config file using the
-[hcl2_upgrade command](/docs/commands/hcl2_upgrade).
-:::
+This topic providers reference information about the `provisioner` block.
 
-The `provisioner` block defines how a provisioner is configured.
+## Description
+
+The `provisioner` block defines how to configure a provisioner. Provisioners use builtin and third-party software to install and configure the
+machine image after booting. Provisioners prepare the system for use.
+
+The list of available provisioners can be found in the
+[Provisioners](/docs/provisioners/) section.
 
 ```hcl
 # builds.pkr.hcl
@@ -31,18 +29,12 @@ build {
 }
 ```
 
-Provisioners use builtin and third-party software to install and configure the
-machine image after booting. Provisioners prepare the system for use.
-
-The list of available provisioners can be found in the
-[provisioners](/docs/provisioners/) section.
-
-## Run on Specific Builds
+## Run on Specific Sources
 
 You can use the `only` or `except` configurations to run a provisioner only
-with specific builds. These two configurations do what you expect: `only` will
-only run the provisioner on the specified builds and `except` will run the
-provisioner on anything other than the specified builds.
+with specific sources. These two configurations do what you expect: `only` will
+only run the provisioner on the specified sources and `except` will run the
+provisioner on anything other than the specified sources.
 
 An example of `only` being used is shown below, but the usage of `except` is
 effectively the same:
@@ -81,7 +73,15 @@ build {
 }
 ```
 
-The values within `only` or `except` are _build names_, not builder types.
+The source names within `only` and `except` must suppress `source.` prefix.
+
+The values within `only` or `except` are _source names_, not builder types nor build names.
+
+::: info
+Note: In the cli `only` and `except` will match against **build names** (for
+example:`my_build.amazon-ebs.first-example`) but in a provisioner they will
+match on the **source name** (for example:`amazon-ebs.third-example`).
+:::
 
 ## Build-Specific Overrides
 
@@ -137,7 +137,7 @@ build {
 ```
 
 As you can see, the `override` key is used. The value of this key is another
-HCL attribute map where the key is the name of a [builder
+HCL attribute map where the key is the name of a [source
 definition](/docs/templates/hcl_templates/blocks/source). The value of this is in turn
 another HCL attribute map. This HCL attribute map simply contains the provisioner
 configuration as normal. This configuration is merged into the default
@@ -229,6 +229,26 @@ build {
 
 For the above provisioner, Packer will retry maximum five times until stops failing.
 If after five retries the provisioner still fails, then the complete build will fail.
+
+## Continue after an error
+
+Every provisioner definition in a Packer template can set
+`continue_on_error` to `true` to continue the build after that provisioner fails. Packer
+applies this setting after it exhausts `max_retries`.
+
+```hcl
+build {
+  # ...
+  provisioner "shell" {
+    inline = ["exit 1"]
+
+    continue_on_error = true
+  }
+}
+```
+
+Use `continue_on_error` only when subsequent build steps can run safely after a
+provisioner fails.
 
 ## Timeout
 

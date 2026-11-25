@@ -1,7 +1,7 @@
 ---
-title: regexall - Functions - Configuration Language
+title: regexall function reference
 description: |-
-  The regexall function applies a regular expression to a string and returns a list of all matches.
+  The `regexall` function applies a regular expression to a string and returns a list of all matches.
 ---
 
 # `regexall` Function

@@ -1,8 +1,8 @@
 ---
-title: trimspace - Functions - Configuration Language
+title: trimspace function reference
 description: |-
-  The trimspace function removes space characters from the start and end of
-  a given string.
+  The `trimspace` function removes space characters from the start and end of
+  a given string. 
 ---
 
 # `trimspace` Function

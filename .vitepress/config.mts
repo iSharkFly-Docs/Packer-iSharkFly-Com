@@ -19,7 +19,7 @@ const englishSrcDir = path.join(rootDir, 'src');
 const EN_PREFIX = '/en';
 
 const zhSidebarText: Record<string, string> = {
-  'Getting Started': '入门',
+  'What is Packer?': '什么是 Packer？',
   'Commands (CLI)': '命令（CLI）',
   'Templates': '模板',
   'HCL Templates': 'HCL 模板',
@@ -39,11 +39,14 @@ const zhSidebarText: Record<string, string> = {
   'JSON Templates': 'JSON 模板',
   'Communicators': '通信器',
   'Builders': '构建器',
-  'Data Sources': '数据源',
+  'Data sources reference': '数据源参考',
+  'HCP Packer': 'HCP Packer',
   'Provisioners': '配置器',
   'Post-Processors': '后处理器',
-  'Packer Plugins': 'Packer 插件',
-  'Extending Packer': '扩展 Packer',
+  'Release notes': '发行说明',
+  'Upgrades': '升级',
+  'Plugins': '插件',
+  'Developing Plugins': '开发插件',
   'HCL guides': 'HCL 指南',
   'Automatic OS Installs': '自动安装操作系统',
   'Build Immutable Infrastructure with Packer in CI/CD': '在 CI/CD 中使用 Packer 构建不可变基础设施',
@@ -123,10 +126,10 @@ for (const [key, locale] of Object.entries(site.locales)) {
     themeConfig: {
       ...zhThemeText,
       nav: [
-        { text: '简介', link: `${locale.base}intro/`, activeMatch: `^${locale.base}intro/` },
-        { text: '文档', link: `${locale.base}docs/`, activeMatch: `^${locale.base}docs/` },
+        { text: '简介', link: `${locale.base}docs/intro/`, activeMatch: `^${locale.base}docs/intro/` },
+        { text: '文档', link: `${locale.base}docs/`, activeMatch: `^${locale.base}docs/(?!intro/)` },
         { text: '指南', link: `${locale.base}guides/`, activeMatch: `^${locale.base}guides/` },
-        { text: '社区工具', link: `${locale.base}community-tools`, activeMatch: `^${locale.base}community-` },
+        { text: '插件', link: `${locale.base}plugins/`, activeMatch: `^${locale.base}(plugins/|community-plugins)` },
       ],
       sidebar: mapSidebar(locale.sidebar, link => link, text => zhSidebarText[text] ?? text),
     },
@@ -141,10 +144,10 @@ for (const [key, locale] of Object.entries(site.locales)) {
     description: `Packer documentation`,
     themeConfig: {
       nav: [
-        { text: 'Intro', link: `${enBase}intro/`, activeMatch: `^${enBase}intro/` },
-        { text: 'Docs', link: `${enBase}docs/`, activeMatch: `^${enBase}docs/` },
+        { text: 'Intro', link: `${enBase}docs/intro/`, activeMatch: `^${enBase}docs/intro/` },
+        { text: 'Docs', link: `${enBase}docs/`, activeMatch: `^${enBase}docs/(?!intro/)` },
         { text: 'Guides', link: `${enBase}guides/`, activeMatch: `^${enBase}guides/` },
-        { text: 'Community', link: `${enBase}community-tools`, activeMatch: `^${enBase}community-` },
+        { text: 'Plugins', link: `${enBase}plugins/`, activeMatch: `^${enBase}(plugins/|community-plugins)` },
       ],
       sidebar: mapSidebar(locale.sidebar, enLink, text => text),
     },
@@ -184,7 +187,7 @@ export default defineConfig({
   ignoreDeadLinks: true,
   locales,
   head: [
-    ['link', { rel: 'icon', href: '/favicon.ico' }],
+    ['link', { rel: 'icon', type: 'image/png', href: '/img/favicons/favicon-32x32.png' }],
   ],
   markdown: {
     theme: { light: 'github-light', dark: 'github-dark' },

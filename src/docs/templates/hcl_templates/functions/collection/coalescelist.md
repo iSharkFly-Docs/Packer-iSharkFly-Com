@@ -1,8 +1,7 @@
 ---
-title: coalescelist - Functions - Configuration Language
+title: coalescelist function reference
 description: |-
-  The coalescelist function takes any number of list arguments and returns the
-  first one that isn't empty.
+  The `coalescelist` function returns the first non-empty argument in a list of arguments. Learn how to use the `coalescelist` function in Packer templates.
 ---
 
 # `coalescelist` Function

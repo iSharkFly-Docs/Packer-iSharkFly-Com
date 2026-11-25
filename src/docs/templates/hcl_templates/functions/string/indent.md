@@ -1,7 +1,7 @@
 ---
-title: indent - Functions - Configuration Language
+title: indent function reference
 description: |-
-  The indent function adds a number of spaces to the beginnings of all but the
+  The `indent` function adds spaces to the beginnings of all but the
   first line of a given multi-line string.
 ---
 

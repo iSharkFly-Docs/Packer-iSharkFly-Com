@@ -1,33 +1,25 @@
 ---
 description: >
-  A source block nested in a build block allows you to use an already defined
-  source and to set specific fields which aren't already set in the top-level
-  source block.
-title: source - build - Blocks
+  A `source` block nested in a `build` block reuses a builder defined
+  elsewhere in the configuration. Learn how to configure a nested `source` block.
+title: source block reference
 ---
 
-# The `source` block
+# `source` block
 
-::: info
-**Note:** This page is about HCL2 Packer templates. HCL2 templates
-were first introduced as a beta feature into Packer version 1.5. As of v1.7,
-HCL2 support is no longer in beta, and is the preferred way to write Packer
-configuration. For the old-style stable configuration language see
-[template docs](/docs/templates/legacy_json_templates/). As of v1.6.2, you can
-convert your legacy JSON template into an HCL2 config file using the
-[hcl2_upgrade command](/docs/commands/hcl2_upgrade).
-:::
+This topic provides reference information about `source` blocks nested in a `build` block.
 
-A `source` block nested in a `build` block allows you to use an already defined
-source and to "fill in" those fields _which aren't already set in the top-level
-source block_.
+## Description
+
+Add a `source` block to your `build` block to reuse a builder defined elsewhere in the configuration. Packer fills in the source fields that are not already set in the top-level `source` block.
 
 Build-level source blocks are implemented by merging their contents with the
-corresponding top-level source block, and a packer build will fail when it
+corresponding top-level source block, and a `packer build` command fails when it
 encounters the ambiguity that arises when a source parameter is defined twice.
-For example, in the below example, if the top-level "lxd.arch" source block
-also defined an `output_image` field (or if one of the build-level source blocks
-redefined and image field), Packer would error.
+
+For example, in the below example, if the top-level `lxd.arch` source block
+also defined an `output_image` field or if one of the build-level source blocks
+redefined and image field, Packer would error.
 
 ```hcl
 # file: builds.pkr.hcl

@@ -1,6 +1,6 @@
 ---
-title: yamlencode - Functions - Configuration Language
-description: The yamlencode function encodes a given value as a YAML string.
+title: yamlencode function reference
+description: The `yamlencode` function encodes a given value as a YAML string.
 ---
 
 # `yamlencode` Function
@@ -43,7 +43,7 @@ to YAML tags in the following way:
 | `object(...)` | `!!map`              |
 | Null value    | `!!null`             |
 
-`yamlencode` uses the implied syntaxes for all of the above types, so it does
+`yamlencode` uses the implied syntax for all of the above types, so it does
 not generate explicit YAML tags.
 
 Because the YAML format cannot fully represent all of the Packer language

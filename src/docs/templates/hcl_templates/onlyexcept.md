@@ -1,20 +1,19 @@
 ---
-title: Only Except - HCL Configuration Language
+title: only and except keywords reference
 description: >-
-  Only and Except can be used as a command line argument to selectively run
-  builds. Only and Except can also be used in a provisioner to not run it for a
-  source.
+  The `only` and `except` keywords are filters for Packer builds. Learn how to use `only` and `except` to selectively run provisioners and post-processors.  
 ---
 
-# Only and Except
+# `only` and `except` keywords
 
-`only` and `except` are keywords used to filter what runs in your Packer build,
-they can be seen as a command line argument:
+The `only` and `except` keywords are filters that let you selectively run provisioners and post-processors in your Packer build. You can use the keywords in your Packer templates and as flags on the Packer CLI.
+
+## Command line flags
 
 - `-except=foo,bar,baz` - Run all the builds and post-processors except those
   with the given comma-separated names. In legacy JSON templates, build names default to the
   types of their builders (e.g. `docker` or
-  `amazon-ebs` or `virtualbox-iso`, unless a specific `name` attribute is
+  `amazon-ebs` or `virtualbox-iso`), unless a specific `name` attribute is
   specified within the configuration. In HCL2 templates, the "name" is the
   source block's "name" label, unless an in-build source definition adds the
   "name" configuration option. Any post-processor following
@@ -25,21 +24,32 @@ they can be seen as a command line argument:
 - `-only=foo,bar,baz` - Only run the builds with the given comma-separated
   names. In legacy JSON templates, build names default to the
   types of their builders (e.g. `docker` or
-  `amazon-ebs` or `virtualbox-iso`, unless a specific `name` attribute is
+  `amazon-ebs` or `virtualbox-iso`), unless a specific `name` attribute is
   specified within the configuration. In HCL2 templates, the "name" is the
   source block's "name" label, unless an in-build source definition adds the
   "name" configuration option.
 
-They can also be seen in a template to run or skip provisioners and/or
+## Templates 
+
+You can add the `only` and `except` keywords to run or skip provisioners and
 post-processors for a specific source:
 
 ```hcl
+source "amazon-ebs" "first-example" {
+}
+
+source "amazon-ebs" "second-example" {
+}
+
+source "amazon-ebs" "third-example" {
+}
+
 build {
   name = "my_build"
-  sources [
+  sources = [
     "source.amazon-ebs.first-example",
   ]
-  source "source.amazon-ebs.second-example"
+  source "source.amazon-ebs.second-example" {
     // setting the name field allows you to rename the source only for this
     // build section. To match this builder, you need to use
     // second-example-local-name, not second-example
@@ -47,8 +57,8 @@ build {
   }
 
   provisioner "shell-local" {
-    only = ["amazon-ebs.first-example"]
-    inline = ["echo I will only run for the second example source"]
+    only   = ["amazon-ebs.first-example"]
+    inline = ["echo I will only run for the first example source"]
   }
 
   provisioner "shell-local" {
@@ -58,7 +68,7 @@ build {
 }
 
 build {
-  sources [
+  sources = [
     "source.amazon-ebs.third-example",
   ]
 }
@@ -69,7 +79,7 @@ build {
 #  amazon-ebs.third-example
 ```
 
-Note that cli arguments can be used with a glob operator, using the previous
+Note that CLI arguments can be used with a glob operator, using the previous
 configuration:
 
 - `packer build -only 'my_build.*' dir`: will only run the builds in blocks
@@ -82,7 +92,7 @@ configuration:
   specifically named build.
 
 ::: info
-Note: In the cli `only` and `except` will match agains **build names** (for
+Note: In the cli `only` and `except` will match against **build names** (for
 example:`my_build.amazon-ebs.first-example`) but in a provisioner they will
 match on the **source name** (for example:`amazon-ebs.third-example`).
 :::

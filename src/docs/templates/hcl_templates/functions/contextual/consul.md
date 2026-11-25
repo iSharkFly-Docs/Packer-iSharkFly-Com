@@ -1,12 +1,11 @@
 ---
-title: consul - Functions - Configuration Language
-description: The consul function retrieves secrets from HashiCorp consul KV stores.
+title: consul function reference
+description: The `consul` function retrieves secrets from HashiCorp Consul KV stores. Learn how to use the `consul` function in Packer templates.
 ---
 
 # `consul_key` Function
 
-[Consul](https://www.consul.io) keys can be used within your template using the
-`consul_key` function.
+Retrieves secrets from a HashiCorp Consul KV store. You can use the `consul_key` function secrets to add them to your template. Refer to the [Consul documentation](https://developer.hashicorp.com/consul/docs/dynamic-app-config/kv) for additional information about the Consul KV.
 
 You can either use this function in a locals block or directly inline where you
 want to use the value.
@@ -36,4 +35,4 @@ This will load the key stored at the path `myservice/version` from consul.
 
 The configuration for consul (address, tokens, ...) must be specified as
 environment variables, as specified in the
-[Documentation](https://www.consul.io/docs/commands#environment-variables).
+[Documentation](https://developer.hashicorp.com/consul/commands#environment-variables).

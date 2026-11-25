@@ -1,8 +1,8 @@
 ---
-title: chunklist - Functions - Configuration Language
+title: chunklist function reference
 description: |-
-  The chunklist function splits a single list into fixed-size chunks, returning
-  a list of lists.
+  The `chunklist` function splits a single list into fixed-size chunks and returns
+  a list of lists. Learn how to use the `chunklist` function in Packer templates.
 ---
 
 # `chunklist` Function

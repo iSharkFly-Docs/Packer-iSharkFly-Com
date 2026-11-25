@@ -1,6 +1,6 @@
 ---
-title: reverse - Functions - Configuration Language
-description: The reverse function reverses a sequence.
+title: reverse function reference
+description: The `reverse` function reverses the values in a sequence. Learn how to use the `reverse` function in Packer templates. 
 ---
 
 # `reverse` Function

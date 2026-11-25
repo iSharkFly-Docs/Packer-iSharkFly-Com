@@ -1,10 +1,12 @@
 ---
 description: |
-  All strings within templates are processed by a common Packer templating
-  engine, where variables and functions can be used to modify the value of a
-  configuration parameter at runtime.
-title: Template Engine - Templates
+  The JSON template engine processes strings in JSON templates. Learn how to use JSON template engine functions and variables.
+title: JSON template engine reference
 ---
+
+# JSON template engine reference 
+
+This topic describes the Packer engine that processes JSON templates. 
 
 ::: info
 **Note:** This page is about older-style JSON Packer templates. JSON
@@ -12,13 +14,13 @@ templates are still supported by the Packer core, but new features added to the
 Packer core may not be implemented for JSON templates. We recommend you
 transition to HCL templates as soon as is convenient for you, in order to have
 the best possible experience with Packer. To help you upgrade your templates,
-we have written an [hcl2_upgrade command](/docs/commands/hcl2_upgrade) command.
+we have written an [hcl2_upgrade command](/docs/commands/hcl2_upgrade).
 :::
 
-# Template Engine
+## Description
 
 All strings within templates are processed by a common Packer templating
-engine, where variables and functions can be used to modify the value of a
+engine. The engine uses variables and functions to modify the value of a
 configuration parameter at runtime.
 
 The syntax of templates uses the following conventions:
@@ -81,19 +83,19 @@ Here is a full list of the available functions for reference.
 
   Valid variables to request are:
 
-  - **ID**: Represents the vm being provisioned. For example, in Amazon it is the instance id; in digitalocean,
-    it is the droplet id; in Vmware, it is the vm name.
+  - **ID**: Represents the VM being provisioned. For example, in Amazon it is the instance ID; in DigitalOcean,
+    it is the Droplet ID; in VMware, it is the VM name.
 
   - **Host**, **Port**, **User** and **Password**: The host, port, user, and password that Packer uses to access the machine.
     Useful for using the shell local provisioner to run Ansible or Inspec against the provisioned instance.
 
   - **ConnType**: Type of communicator being used. For example, for SSH communicator this will be "ssh".
 
-  - **PackerRunUUID**: Current build's unique id. Can be used to specify build artifacts.
+  - **PackerRunUUID**: Current build's unique ID. Can be used to specify build artifacts.
     An example of that, is when multiple builds runs at the same time producing the same artifact.
-    It's possible to differentiate these artifacts by naming them with the builds' unique ids.
+    It's possible to differentiate these artifacts by naming them with the builds' unique IDs.
 
-  - **PackerHTTPIP**, **PackerHTTPPort**, and **PackerHTTPAddr**: HTTP IP, port, and address of the file server Packer creates to serve items in the "http" dir to the vm. The HTTP address is displayed in the format `IP:PORT`.
+  - **PackerHTTPIP**, **PackerHTTPPort**, and **PackerHTTPAddr**: HTTP IP, port, and address of the file server Packer creates to serve items in the "http" dir to the VM. The HTTP address is displayed in the format `IP:PORT`.
 
   - **SSHPublicKey** and **SSHPrivateKey**: The public and private key that Packer uses to connect to the instance.
     These are unique to the SSH communicator and are unset when using other communicators.
@@ -116,17 +118,17 @@ Here is a full list of the available functions for reference.
 
   For builder-specific builder variables, please also refer to the builder docs:
 
-  - Amazon EC2: [chroot](https://www.packer.io/docs/builders/amazon/chroot#build-shared-information-variables),
-    [EBS Volume](https://www.packer.io/docs/builders/amazon/ebsvolume#build-shared-information-variables),
-    [EBS](https://www.packer.io/docs/builders/amazon/ebs#build-shared-information-variables),
-    [EBS Surrogate](https://www.packer.io/docs/builders/amazon/ebssurrogate#build-shared-information-variables),
-    [Instance](https://www.packer.io/docs/builders/amazon/instance#build-shared-information-variables).
+  - Amazon EC2: [chroot](https://developer.hashicorp.com/packer/plugins/builders/amazon/chroot#build-shared-information-variables),
+    [EBS Volume](https://developer.hashicorp.com/packer/plugins/builders/amazon/ebsvolume#build-shared-information-variables),
+    [EBS](https://developer.hashicorp.com/packer/plugins/builders/amazon/ebs#build-shared-information-variables),
+    [EBS Surrogate](https://developer.hashicorp.com/packer/plugins/builders/amazon/ebssurrogate#build-shared-information-variables),
+    [Instance](https://developer.hashicorp.com/packer/plugins/builders/amazon/instance#build-shared-information-variables).
 
   This engine is in beta; please report any issues or requests on the Packer
   issue tracker on GitHub.
 
 - `isotime [FORMAT]` - UTC time, which can be
-  [formatted](https://golang.org/pkg/time/#example_Time_Format). See more
+  [formatted](https://pkg.go.dev/time#example_Time_Format). See more
   examples below in [the `isotime` format
   reference](/docs/templates/legacy_json_templates/engine#isotime-function-format-reference).
   `strftime FORMAT` - UTC time, formated using the ISO C standard format
@@ -216,7 +218,7 @@ Template variables are special variables automatically set by Packer at build
 time. Some builders, provisioners and other components have template variables
 that are available only for that component. Template variables are recognizable
 because they're prefixed by a period, such as `{{ .Name }}`. For example, when
-using the [`shell`](https://www.packer.io/docs/builders/vmware-iso) builder template variables
+using the [`shell`](https://developer.hashicorp.com/packer/plugins/builders/vmware/iso) builder template variables
 are available to customize the
 [`execute_command`](/docs/provisioners/shell#execute_command) parameter
 used to determine how Packer will run the shell command.
@@ -243,17 +245,17 @@ user variables. See the [user variable](/docs/templates/legacy_json_templates/us
 documentation for more information on user variables.
 :::
 
-# isotime Function Format Reference
+## `isotime` Function Format Reference
 
-The isotime template engine uses golang to generate timestamps. If you're
-unfamiliar with golang, then the way you format the timestamp is going to
+The `isotime` template engine uses Go to generate timestamps. If you're
+unfamiliar with Go, then the way you format the timestamp is going to
 feel a bit unusual compared to how you may be used to formatting
 datetime strings.
 
-Full docs and examples for the golang time formatting function can be found
-[here](https://golang.org/pkg/time/#example_Time_Format)
+Full docs and examples for the Go time formatting function can be found
+[here](https://pkg.go.dev/time#example_Time_Format)
 
-However, the formatting basics are worth describing here. From the [golang docs](https://golang.org/pkg/time/#pkg-constants):
+However, the formatting basics are worth describing here. From the [Go docs](https://pkg.go.dev/time#pkg-constants):
 
 > These are predefined layouts for use in Time.Format and time.Parse. The
 > reference time used in the layouts is the specific time:
@@ -283,17 +285,16 @@ of how you'd declare a variable using the isotime function.
 You can try and modify the following examples in a packer template or in
 `packer console` to get an idea of how to set different timestamps:
 
-| Input                                      | Output                       |
-| ------------------------------------------ | -----------                  |
-| ``"packer-{{isotime `2006-01-02`}}"``          | "packer-2021-05-17 11:40:16" |
-| ``"packer-{{isotime `Jan-_2-15:04:05.000`}}"`` | "packer-May-17-23:40:16.786" |
-| ``"packer-{{isotime `3:04PM`}}"``              | "packer-11:40PM"             |
-| ``"{{ isotime }}"``                            | "June 7, 7:22:43pm 2014"     |
-| ``"{{isotime `2006-01-02`}}"``                 | "2014-06-07"                 |
-| ``"{{isotime `Mon 1504`}}"``                   | "Sat 1922"                   |
-| ``"{{isotime `02-Jan-06 03\_04\_05`}}"``       | "07-Jun-2014 07\_22\_43"     |
-| ``"{{isotime `Hour15Year200603`}}"``           | "Hour19Year201407"           |
-
+| Input                                            | Output                       |
+| ------------------------------------------------ | ---------------------------- |
+| `` "packer-{{isotime `2006-01-02`}}" ``          | "packer-2021-05-17"          |
+| `` "packer-{{isotime `Jan-_2-15:04:05.000`}}" `` | "packer-May-17-23:40:16.786" |
+| `` "packer-{{isotime `3:04PM`}}" ``              | "packer-11:40PM"             |
+| `"{{ isotime }}"`                                | "June 7, 7:22:43pm 2014"     |
+| `` "{{isotime `2006-01-02`}}" ``                 | "2014-06-07"                 |
+| `` "{{isotime `Mon 1504`}}" ``                   | "Sat 1922"                   |
+| `` "{{isotime `02-Jan-06 03\_04\_05`}}" ``       | "07-Jun-2014 07_22_43"       |
+| `` "{{isotime `Hour15Year200603`}}" ``           | "Hour19Year201407"           |
 
 Formatting for the function `isotime` uses the magic reference date **Mon Jan 2
 15:04:05 -0700 MST 2006**, which breaks down to the following:
@@ -341,13 +342,13 @@ _The values in parentheses are the abbreviated, or 24-hour clock values_
 Note that "-0700" is always formatted into "+0000" because `isotime` is always
 UTC time.
 
-# split Function Format Reference
+## `split` Function Format Reference
 
 The function `split` takes an input string, a seperator string, and a numeric
 component value and returns the requested substring.
 
 Please note that you cannot use the `split` function on user variables, because
-we can't nest the functions currently. This function is indended to be used on
+we can't nest the functions currently. This function is intended to be used on
 builder variables like build_name. If you need a split user variable, the best
 way to do it is to create a separate variable.
 
@@ -380,9 +381,9 @@ this case, on the `fixed-string` value):
 }
 ```
 
-# replace Function Format Reference
+## `replace` Function Format Reference
 
-Here are some examples using the replace options:
+Here are some examples using the `replace` options:
 
 ```liquid
 build_name = foo-bar-provider

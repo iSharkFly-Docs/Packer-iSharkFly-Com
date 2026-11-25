@@ -1,15 +1,23 @@
 ---
 description: |
-  Welcome to the Packer documentation! This documentation is more of a reference
-  guide for all available features and options in Packer. If you're just getting
-  started with Packer, please start with the introduction and getting started
-  guide instead.
-title: Documentation
+  The Packer documentation describes how to use Packer and providers reference information for configuring Packer templates.
+title: Packer documentation
 ---
 
-# Packer 文档
+# Packer Documentation
 
-Welcome to the Packer documentation! This documentation is more of a reference
-guide for all available features and options in Packer. If you're just getting
-started with Packer, please start with the [introduction and getting started
-guide](/intro/) instead.
+Packer is a community tool that lets you to create identical machine images for multiple platforms from a single source template. People commonly use Packer to create golden images that teams across an organization can use in cloud infrastructure.
+
+To install Packer and learn the standard Packer workflow, try the [Get Started tutorials](https://developer.hashicorp.com/packer/tutorials).
+
+## HCP Packer
+
+The HCP Packer registry stores metadata about your artifacts. You can use the registry to track information about
+artifacts from your Packer builds, clearly designate which artifacts are appropriate for test and production
+environments, and query for the right artifacts to use in both Packer and Terraform configurations.
+
+Refer to the following resources to get started: 
+
+- [HCP Packer documentation](https://developer.hashicorp.com/hcp/docs/packer) 
+- [HCP Packer tutorials](https://developer.hashicorp.com/packer/tutorials/hcp-get-started)
+- [Log into the HCP portal](https://portal.cloud.hashicorp.com)

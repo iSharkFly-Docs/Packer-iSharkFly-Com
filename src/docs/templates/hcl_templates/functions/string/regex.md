@@ -1,7 +1,7 @@
 ---
-title: regex - Functions - Configuration Language
+title: regex function reference
 description: |-
-  The regex function applies a regular expression to a string and returns the
+  The `regex` function applies a regular expression to a string and returns the
   matching substrings.
 ---
 
@@ -135,12 +135,6 @@ aaabbbccc
   "02",
   "01",
 ]
-
-> regex("^(?:(?P<scheme>[^:/?#]+):)?(?://(?P<authority>[^/?#]*))?", "https://packer.io/docs/")
-{
-  "packer" = "packer.io"
-  "scheme" = "https"
-}
 
 > regex("[a-z]+", "53453453.34534523454")
 

@@ -1,23 +1,17 @@
 ---
 description: >
-  The locals block also called the local-variable block defines locals within
-  your Packer configuration.
-title: locals - Blocks
+  The `locals` and `local-variable` blocks declare local variables in
+  your Packer configuration. Learn how to use these blocks to declare local variables in your template.
+title: locals block reference
 ---
 
-# The `locals` block
+# `locals` block
 
-::: info
-**Note:** This page is about HCL2 Packer templates. HCL2 templates
-were first introduced as a beta feature into Packer version 1.5. As of v1.7,
-HCL2 support is no longer in beta, and is the preferred way to write Packer
-configuration. For the old-style stable configuration language see
-[template docs](/docs/templates/legacy_json_templates/). As of v1.6.2, you can
-convert your legacy JSON template into an HCL2 config file using the
-[hcl2_upgrade command](/docs/commands/hcl2_upgrade).
-:::
+This topic provides reference information about the `locals` block.
 
-The `locals` block, also called the `local-variable` block, defines locals within
+## Description
+
+The `locals` and `local-variable` blocks declare local variables in
 your Packer configuration.
 
 ```hcl
@@ -36,8 +30,7 @@ local "mylocal" {
 }
 ```
 
-# More on variables
+Refer to the following topics for additional information about using the `locals` and `local-variable` blocks:
 
-- Read the [full locals](/docs/templates/hcl_templates/locals) description for a more
-  thorough read.
-- Read the [variables guide](/guides/hcl/variables) for more examples.
+- [Local Variables](/docs/templates/hcl_templates/locals)
+- [Input Variables and local variables](/guides/hcl/variables)

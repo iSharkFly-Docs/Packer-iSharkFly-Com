@@ -1,6 +1,6 @@
 ---
-title: log - Functions - Configuration Language
-description: The log function returns the logarithm of a given number in a given base.
+title: log function reference
+description: The `log` function returns the logarithm of a given number in a given base.
 ---
 
 # `log` Function

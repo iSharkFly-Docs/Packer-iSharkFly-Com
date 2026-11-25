@@ -1,22 +1,19 @@
 ---
 description: |
-  The file Packer provisioner uploads files to machines built by Packer. The
-  recommended usage of the file provisioner is to use it to upload files, and
-  then use shell provisioner to move them to the proper place, set permissions,
-  etc.
-title: File - Provisioners
+  The `file` Packer provisioner uploads files to machines built by Packer. Learn how to use the `file` provisioner and about the Packer provisioner workflow.
+title: file provisioner reference
 ---
 
-# File Provisioner
+<Badge type="tip" text="Official" />
 
-Type: `file`
+# `file` provisioner
 
-The file Packer provisioner uploads files to machines built by Packer. The
-recommended usage of the file provisioner is to use it to upload files, and
-then use [shell provisioner](/docs/provisioners/shell) to move them to the
-proper place, set permissions, etc.
+The `file` Packer provisioner uploads files to machines built by Packer. We recommend implementing the following workflow:
 
-Warning: You can only upload files to locations that the provisioning user
+1. Use the `file` provisioner to upload files
+1. Use the [`shell` provisioner](/docs/provisioners/shell) to move the files into the proper place, set permissions, and perform other tasks.
+
+You can only upload files to locations that the provisioning user
 (generally not root) has permission to access. Creating files in /tmp and
 using a shell provisioner to move them into the final location is the only
 way to upload files to root owned locations.
@@ -25,15 +22,14 @@ The file provisioner can upload both single files and complete directories.
 
 ## Basic Example
 
-<Tabs groupId="template-format" :tabs="[{label:'JSON',value:'t0'},{label:'HCL2',value:'t1'}]">
+<Tabs groupId="template-format" :tabs="[{label:'HCL2',value:'t0'},{label:'JSON',value:'t1'}]">
 
 <TabItem value="t0">
 
-```json
-{
-  "type": "file",
-  "source": "app.tar.gz",
-  "destination": "/tmp/app.tar.gz"
+```hcl
+provisioner "file" {
+  source = "app.tar.gz"
+  destination = "/tmp/app.tar.gz"
 }
 ```
 
@@ -41,10 +37,11 @@ The file provisioner can upload both single files and complete directories.
 
 <TabItem value="t1">
 
-```hcl
-provisioner "file"{
-  source = "app.tar.gz"
-  destination = "/tmp/app.tar.gz"
+```json
+{
+  "type": "file",
+  "source": "app.tar.gz",
+  "destination": "/tmp/app.tar.gz"
 }
 ```
 
@@ -59,6 +56,13 @@ The available configuration options are listed below.
 ## Configuration Reference
 
 Required Parameters:
+
+- `content` (string) - This is the content to copy to `destination`. If destination is a file,
+  content will be written to that file, in case of a directory a file named
+  `pkr-file-content` is created. It's recommended to use a file as the
+  destination. The `templatefile` function might be used here, or any
+  interpolation syntax. This attribute cannot be specified with source or
+  sources.
 
 - `source` (string) - The path to a local file or directory to upload to the
   machine. The path can be absolute or relative. If it is relative, it is
@@ -197,6 +201,11 @@ directly.
 This behavior was adopted from the standard behavior of rsync. Note that under
 the covers, rsync may or may not be used.
 
+**Note:** Packer does not infer behaviors based on the guest operating system,
+as this would add unnecessary complexity and reduce maintainability. To ensure
+consistent behavior across all platforms, use a trailing forward slash when
+specifying directories, even when working with Windows guests.
+
 ## Uploading files that don't exist before Packer starts
 
 In general, local files used as the source **must** exist before Packer is run.
@@ -292,5 +301,5 @@ using the file provisioner on Windows, it's suggested that you set up an SSH
 server and use the [ssh communicator](/docs/communicators/ssh). If you only want
 to transfer files to your guest, and if your builder supports it, you may also
 use the `http_directory` or `http_content` directives. This will cause that
-directory to be available to the guest over http, and set the environment
+directory to be available to the guest over HTTP, and set the environment
 variable `PACKER_HTTP_ADDR` to the address.

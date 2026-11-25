@@ -1,4 +1,0 @@
----
-title: ipnet - Functions - Configuration Language
-description: Overview of available ipnet functions
----

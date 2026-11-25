@@ -1,13 +1,14 @@
 ---
 description: |
-  The `packer build` command takes a template and runs all the builds within it
-  in order to generate a set of artifacts. The various builds specified within a
-  template are executed in parallel, unless otherwise specified. And the
-  artifacts that are created will be outputted at the end of the build.
+  The `packer build` command builds all of the artifacts defined in a template. Builds can run in parallel or sequentially.
 title: packer build - Commands
 ---
 
-# `build` Command
+# `packer build` command reference
+
+::: info
+Starting August 1st, 2025, the source for many official HashiCorp-maintained Packer plugins is moving from GitHub releases to the official HashiCorp release site, [releases.hashicorp.com](https://releases.hashicorp.com). Refer to [Install HashiCorp-maintained plugins](/docs/plugins/install#install-hashicorp-maintained-plugins) for more information.
+:::
 
 The `packer build` command takes a template and runs all the builds within it
 in order to generate a set of artifacts. The various builds specified within a
@@ -27,7 +28,7 @@ artifacts that are created will be outputted at the end of the build.
 - `-except=foo,bar,baz` - Run all the builds and post-processors except those
   with the given comma-separated names. In legacy JSON templates, build names default to the
   types of their builders (e.g. `docker` or
-  `amazon-ebs` or `virtualbox-iso`, unless a specific `name` attribute is
+  `amazon-ebs` or `virtualbox-iso`), unless a specific `name` attribute is
   specified within the configuration. In HCL2 templates, the "name" is the
   source block's "name" label, unless an in-build source definition adds the
   "name" configuration option. Any post-processor following
@@ -58,7 +59,7 @@ artifacts that are created will be outputted at the end of the build.
 - `-only=foo,bar,baz` - Only run the builds with the given comma-separated
   names. In legacy JSON templates, build names default to the
   types of their builders (e.g. `docker` or
-  `amazon-ebs` or `virtualbox-iso`, unless a specific `name` attribute is
+  `amazon-ebs` or `virtualbox-iso`), unless a specific `name` attribute is
   specified within the configuration. In HCL2 templates, the "name" is the
   source block's "name" label, unless an in-build source definition adds the
   "name" configuration option.
@@ -73,3 +74,13 @@ artifacts that are created will be outputted at the end of the build.
   multiple times. This is useful for setting version numbers for your build.
 
 - `-var-file` - Set template variables from a file.
+
+- `-warn-on-undeclared-var` - Setting this flag will yield a warning for each assignment within
+  a variable definitions file (*.pkrvars.hcl | *.pkrvars.json) that does not have an accompanying
+  variable block. This can occur when using a var-file that contains a large amount of unused variables
+  for a given HCL2 template. For HCL2 template builds defining a value for a variable in a var-file is
+  not enough on its own for Packer to function, as there also needs to be a variable block definition in
+  the template files `pkr.hcl` for the variable. By default `packer build` will not warn when a var-file
+  contains one or more undeclared variables.
+
+- `-skip-enforcement` - Skip injection of HCP Packer enforced provisioners. Enforced provisioners are versioned provisioner definitions linked to an HCP Packer bucket, and Packer applies them automatically during the build. Refer to [Enforced provisioners](https://developer.hashicorp.com/hcp/docs/packer/store/enforce-provisioners) for details.

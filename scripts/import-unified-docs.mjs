@@ -1,10 +1,17 @@
-// Imports the Packer documentation from website/content (Next.js MDX) into src/,
-// converting packer.io-specific MDX extensions to VitePress Markdown.
+// Imports the Packer documentation from a checkout of hashicorp/web-unified-docs
+// (the source of developer.hashicorp.com/packer) into src/, converting the
+// HashiCorp-specific MDX extensions to VitePress Markdown.
 //
-// Usage: node scripts/import-website.mjs [path-to-website-dir]   (default: website)
+// Usage: node scripts/import-unified-docs.mjs <path-to-web-unified-docs> [version]
+//   e.g. node scripts/import-unified-docs.mjs ../web-unified-docs          (latest version)
+//        node scripts/import-unified-docs.mjs ../web-unified-docs v1.16.x
 //
-// - Pages keep their packer.io URL (content/docs/foo.mdx -> src/docs/foo.md -> /docs/foo),
-//   so the root-relative links used inside the docs keep working.
+// A sparse checkout is enough:
+//   git clone --depth 1 --filter=blob:none --sparse https://github.com/hashicorp/web-unified-docs.git
+//   git -C web-unified-docs sparse-checkout set content/packer
+//
+// - Pages keep their upstream URL without the /packer prefix
+//   (content/docs/foo.mdx -> src/docs/foo.md -> /docs/foo).
 // - The sidebar structure is written to scripts/nav.json and consumed by generate.mjs.
 // - The navigation files are read as JSON; no upstream code is executed.
 import fs from 'node:fs';
@@ -14,29 +21,46 @@ import { fileURLToPath } from 'node:url';
 const SITE_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SRC_DIR = path.join(SITE_DIR, 'src');
 const NAV_FILE = path.join(SITE_DIR, 'scripts', 'nav.json');
-const UPSTREAM_SITE = 'https://www.packer.io';
+const UPSTREAM_SITE = 'https://developer.hashicorp.com';
+const PRODUCT = 'packer';
 
 // Pages in src/ that are maintained by hand and must survive a re-import.
 const KEEP = new Set(['index.md']);
 
-const WEBSITE = path.resolve(process.argv[2] ?? path.join(SITE_DIR, 'website'));
-const CONTENT = path.join(WEBSITE, 'content');
+const USAGE = 'Usage: node scripts/import-unified-docs.mjs <path-to-web-unified-docs> [version]';
+const repoRoot = process.argv[2] && path.resolve(process.argv[2]);
+const productDir = repoRoot && path.join(repoRoot, 'content', PRODUCT);
+if (!productDir || !fs.existsSync(productDir))
+  throw new Error(USAGE);
+
+function versionKey(name) {
+  return (name.match(/\d+/g) ?? []).map(Number);
+}
+const VERSION = process.argv[3] ?? fs.readdirSync(productDir)
+  .filter(name => /^v\d+\.\d+\.x$/.test(name))
+  .sort((a, b) => {
+    const [x, y] = [versionKey(a), versionKey(b)];
+    return x[0] - y[0] || x[1] - y[1];
+  })
+  .pop();
+const UPSTREAM = path.join(productDir, VERSION ?? '');
+const CONTENT = path.join(UPSTREAM, 'content');
 const PARTIALS = path.join(CONTENT, 'partials');
-const PUBLIC = path.join(WEBSITE, 'public');
-const DATA = path.join(WEBSITE, 'data');
-if (!fs.existsSync(CONTENT) || !fs.existsSync(DATA))
-  throw new Error('Usage: node scripts/import-website.mjs [path-to-website-dir]');
+const IMG = path.join(UPSTREAM, 'img');
+const DATA = path.join(UPSTREAM, 'data');
+if (!VERSION || !fs.existsSync(CONTENT) || !fs.existsSync(DATA))
+  throw new Error(`${USAGE}\nNo Packer docs found in ${UPSTREAM}`);
 
 // Sidebar sections: URL prefix -> navigation data file.
 const SECTIONS = [
-  { base: 'intro', nav: 'intro-nav-data.json', overview: 'What is Packer?' },
   { base: 'docs', nav: 'docs-nav-data.json', overview: 'Overview' },
   { base: 'guides', nav: 'guides-nav-data.json', overview: 'Overview' },
+  { base: 'plugins', nav: 'plugins-nav-data.json', overview: 'Overview' },
 ];
 
 let warnings = 0;
 function warn(message) {
-  console.warn(`[import-website] ${message}`);
+  console.warn(`[import-unified-docs] ${message}`);
   warnings++;
 }
 
@@ -77,12 +101,13 @@ function pageFile(url) {
 // Redirects (exact sources only) so links to moved pages still resolve
 // ---------------------------------------------------------------------------
 
+// redirects.jsonc: sources and destinations are /packer/... paths.
 function readRedirects() {
-  const file = path.join(WEBSITE, 'redirects.next.js');
+  const file = path.join(UPSTREAM, 'redirects.jsonc');
   const map = new Map();
   if (!fs.existsSync(file)) return map;
   const text = fs.readFileSync(file, 'utf8');
-  for (const m of text.matchAll(/source:\s*'([^']+)',\s*destination:\s*'([^']+)'/g)) {
+  for (const m of text.matchAll(/"source":\s*"([^"]+)",\s*"destination":\s*"([^"]+)"/g)) {
     if (!/[:*(]/.test(m[1])) map.set(m[1].replace(/\/$/, ''), m[2]);
   }
   return map;
@@ -96,7 +121,7 @@ const redirects = readRedirects();
 function toNavItems(routes, base) {
   const items = [];
   for (const route of routes) {
-    if (route.divider) continue;
+    if (route.divider || route.heading || route.hidden) continue;
     if (route.routes) {
       const children = toNavItems(route.routes, base);
       if (children.length) items.push({ text: route.title, items: children });
@@ -130,7 +155,22 @@ function collectNav() {
 // Markdown conversion
 // ---------------------------------------------------------------------------
 
-const LANGUAGES = { 'shell-session': 'shellsession', hcl2: 'hcl', text: 'txt', plaintext: 'txt', golang: 'go' };
+const LANGUAGES = {
+  'shell-session': 'shellsession', hcl2: 'hcl', text: 'txt', plaintext: 'txt', golang: 'go', command: 'shell',
+};
+
+// <PluginBadge type="..."> -> VitePress <Badge>.
+const PLUGIN_BADGES = {
+  official: ['tip', 'Official'],
+  verified: ['info', 'Verified'],
+  community: ['info', 'Community'],
+  archived: ['warning', 'Archived'],
+  hcp_packer_ready: ['tip', 'HCP Packer Ready'],
+};
+function pluginBadge(type) {
+  const [kind, text] = PLUGIN_BADGES[type] ?? ['info', type];
+  return `<Badge type="${kind}" text="${text}" />`;
+}
 const CALLOUTS = { '->': 'info', '~>': 'warning', '!>': 'danger', '=>': 'tip' };
 
 // Tags rendered as HTML / components. Anything else that looks like a tag outside
@@ -139,7 +179,7 @@ const HTML_TAGS = new Set([
   'a', 'abbr', 'b', 'blockquote', 'br', 'caption', 'code', 'dd', 'del', 'details', 'div', 'dl', 'dt', 'em',
   'figcaption', 'figure', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'hr', 'i', 'iframe', 'img', 'ins', 'kbd', 'li',
   'ol', 'p', 'pre', 's', 'small', 'span', 'strong', 'sub', 'summary', 'sup', 'table', 'tbody', 'td', 'tfoot',
-  'th', 'thead', 'tr', 'u', 'ul', 'video', 'source', 'picture', 'Tabs', 'TabItem',
+  'th', 'thead', 'tr', 'u', 'ul', 'video', 'source', 'picture', 'Tabs', 'TabItem', 'Badge',
 ]);
 
 const FENCE = /^(\s*)(`{3,}|~{3,})(.*)$/;
@@ -186,6 +226,9 @@ function convertFrontmatter(text) {
   const out = [];
   for (let i = 0; i < lines.length; i++) {
     const key = lines[i].match(/^([\w-]+):/)?.[1];
+    // Generated metadata block: "# START AUTO GENERATED METADATA", created_at, last_modified.
+    if (/^#\s*(START|END) AUTO GENERATED METADATA/.test(lines[i]) || key === 'created_at' || key === 'last_modified')
+      continue;
     if (key === 'sidebar_title') {
       while (i + 1 < lines.length && /^\s/.test(lines[i + 1])) i++;
       continue;
@@ -225,10 +268,17 @@ function convertBlocks(text) {
     return block.split('\n').map(l => (l ? indent + l : l)).join('\n');
   });
 
-  // Plugin tier badges -> text.
-  text = text.replace(/<PluginTierLabel\s+tier="(\w+)"\s*\/>/g, (_, tier) => `**${tier[0].toUpperCase()}${tier.slice(1)}**`);
-  // Checklist is only a styling wrapper.
-  text = text.replace(/^[ \t]*<\/?Checklist>[ \t]*$/gm, '');
+  // Plugin tier badges.
+  text = text.replace(/<PluginBadge\s+type="(\w+)"\s*\/>/g, (_, type) => pluginBadge(type));
+  text = text.replace(/<PluginTierLabel\s+tier="(\w+)"\s*\/>/g, (_, type) => pluginBadge(type));
+  // <BadgesHeader> holds the badges shown above the title: keep them on one line.
+  text = text.replace(/^[ \t]*<BadgesHeader>([\s\S]*?)<\/BadgesHeader>/gm,
+    (_, inner) => inner.trim().split(/\s*\n\s*/).join(' '));
+  // <Note> -> info container.
+  text = text.replace(/^([ \t]*)<Note>([\s\S]*?)^[ \t]*<\/Note>/gm,
+    (_, indent, inner) => `${indent}::: info\n${dedent(inner)}\n${indent}:::`);
+  // Styling-only wrappers.
+  text = text.replace(/^[ \t]*<\/?(Checklist|ImageConfig)\b[^>]*>[ \t]*$/gm, '');
   // JSX style objects -> CSS: style={{ textAlign: 'center' }} -> style="text-align: center".
   text = text.replace(/\bstyle=\{\{([^}]*)\}\}/g, (_, body) => {
     const css = [...body.matchAll(/(\w+)\s*:\s*(?:'([^']*)'|"([^"]*)"|([\w.%-]+))/g)]
@@ -275,16 +325,26 @@ function convertLines(text) {
 }
 
 function rewriteTarget(target) {
+  // Absolute links to pages that exist locally become site links.
+  const absolute = target.match(/^https:\/\/(?:developer\.hashicorp\.com|www\.packer\.io)(\/.*)$/);
+  if (absolute) {
+    const local = rewriteTarget(absolute[1].startsWith(`/${PRODUCT}/`) ? absolute[1] : `/${PRODUCT}${absolute[1]}`);
+    return local.startsWith('/') ? local : target;
+  }
   if (/^(https?:|mailto:|#|\.\.?\/|data:|tel:)/.test(target)) return target;
   if (!target.startsWith('/')) return target;
   const [, pathname, suffix = ''] = target.match(/^\/([^?#]*)(.*)$/);
-  const clean = pathname.replace(/\.html$/, '').replace(/\/$/, '');
+  let clean = pathname.replace(/\.html$/, '').replace(/\/$/, '');
+  if (clean.startsWith('img/') && fs.existsSync(path.join(IMG, clean.slice(4)))) return `/${clean}${suffix}`;
+  // Site links are /packer/...; a few older ones omit the product prefix.
+  if (clean === PRODUCT || clean.startsWith(`${PRODUCT}/`)) clean = clean.slice(PRODUCT.length + 1);
+  else if (!/^(docs|guides|plugins)(\/|$)/.test(clean)) return `${UPSTREAM_SITE}/${pathname}${suffix}`; // other products
   if (clean === '') return `/${suffix}`;
-  if (fs.existsSync(path.join(PUBLIC, clean))) return `/${clean}${suffix}`;
   if (pages.has(clean)) return `/${clean}${isFolder(clean) ? '/' : ''}${suffix}`;
-  const redirect = redirects.get(`/${clean}`);
-  if (redirect) return redirect.startsWith('/') && redirect !== `/${clean}` ? rewriteTarget(redirect + suffix) : redirect;
-  return `${UPSTREAM_SITE}/${pathname}${suffix}`;
+  const redirect = redirects.get(`/${PRODUCT}/${clean}`);
+  if (redirect && redirect !== `/${PRODUCT}/${clean}`)
+    return redirect.startsWith('/') ? rewriteTarget(redirect + suffix) : redirect;
+  return `${UPSTREAM_SITE}/${PRODUCT}/${clean}${suffix}`;
 }
 
 function rewriteProse(part) {
@@ -321,7 +381,7 @@ function convertPage(text, page) {
   text = convertBlocks(text);
   text = convertLines(text);
   text = rewriteLinks(text);
-  const leftovers = text.match(/<(Tabs>|Tab\s|PluginTierLabel|Checklist)/g);
+  const leftovers = text.match(/<(Tabs>|Tab\s|PluginTierLabel|PluginBadge|BadgesHeader|Note>|Checklist|ImageConfig)/g);
   if (leftovers) warn(`${page}: unconverted ${[...new Set(leftovers.map(s => s.trim()))].join(', ')}`);
   return text;
 }
@@ -356,14 +416,11 @@ function main() {
     fs.writeFileSync(out, convertPage(fs.readFileSync(file, 'utf8'), url || 'index'));
   }
 
-  // Static files referenced as /img/..., /files/... and the favicon.
-  for (const name of ['img', 'files', 'favicon.ico', 'robots.txt']) {
-    const from = path.join(PUBLIC, name);
-    if (fs.existsSync(from)) fs.cpSync(from, path.join(SRC_DIR, 'public', name), { recursive: true });
-  }
+  // Images referenced as /img/...
+  if (fs.existsSync(IMG)) fs.cpSync(IMG, path.join(SRC_DIR, 'public', 'img'), { recursive: true });
 
   fs.writeFileSync(NAV_FILE, JSON.stringify(nav, null, 2) + '\n');
-  console.log(`[import-website] ${pages.size} pages, ${warnings} warnings. Sidebar: scripts/nav.json`);
+  console.log(`[import-unified-docs] ${VERSION}: ${pages.size} pages, ${warnings} warnings. Sidebar: scripts/nav.json`);
 }
 
 main();

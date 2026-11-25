@@ -1,6 +1,6 @@
 ---
-title: rsadecrypt - Functions - Configuration Language
-description: The rsadecrypt function decrypts an RSA-encrypted message.
+title: rsadecrypt function reference
+description: The `rsadecrypt` function decrypts an RSA-encrypted message. Learn how to usethe `rsadecrypt` function in Packer templates.
 ---
 
 # `rsadecrypt` Function

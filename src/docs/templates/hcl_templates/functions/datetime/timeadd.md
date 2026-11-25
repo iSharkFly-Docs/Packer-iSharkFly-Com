@@ -1,8 +1,8 @@
 ---
-title: timeadd - Functions - Configuration Language
+title: timeadd function reference
 description: |-
-  The timeadd function adds a duration to a timestamp, returning a new
-  timestamp.
+  The `timeadd` function adds time to a timestamp and returns a new
+  timestamp. Learn how to use the `timeadd` function in Packer templates.
 ---
 
 # `timeadd` Function

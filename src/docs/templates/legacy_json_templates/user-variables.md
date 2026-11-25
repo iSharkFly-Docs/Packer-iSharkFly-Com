@@ -1,12 +1,12 @@
 ---
 description: |
-  User variables allow your templates to be further configured with variables
-  from the command-line, environment variables, or files. This lets you
-  parameterize your templates so that you can keep secret tokens,
-  environment-specific data, and other types of information out of your
-  templates. This maximizes the portability and shareability of the template.
-title: User Variables - Templates
+  The `variables` block contains parameterized values for your templates. Learn how to configure `variables` to improve a template's security, portability, and shareability.
+title: variables reference for JSON templates
 ---
+
+# `variables` reference for JSON templates
+
+This topic describes how to use user variables in Packer templates written in JSON.
 
 ::: info
 **Note:** This page is about older-style JSON Packer templates. JSON
@@ -14,12 +14,12 @@ templates are still supported by the Packer core, but new features added to the
 Packer core may not be implemented for JSON templates. We recommend you
 transition to HCL templates as soon as is convenient for you, in order to have
 the best possible experience with Packer. To help you upgrade your templates,
-we have written an [hcl2_upgrade command](/docs/commands/hcl2_upgrade) command.
+we have written an [hcl2_upgrade command](/docs/commands/hcl2_upgrade).
 :::
 
-# Template User Variables
+## Description
 
-User variables allow your templates to be further configured with variables
+The `variables` block lets you further configure a template with variables
 from the command-line, environment variables, Vault, or files. This lets you
 parameterize your templates so that you can keep secret tokens,
 environment-specific data, and other types of information out of your
@@ -75,7 +75,7 @@ User variables are used by calling the `{{user}}` function in the form of
 within the template: in builders, provisioners, _anywhere outside the `variables` section_.
 User variables are available globally within the rest of the template.
 
-## Environment Variables
+## Environment variables
 
 Environment variables can be used within your template using user variables.
 The `env` function is available _only_ within the default value of a user
@@ -128,14 +128,12 @@ This will default `soft_versions` to the value of the key
 
 The configuration for consul (address, tokens, ...) must be specified as
 environment variables, as specified in the
-[Documentation](https://www.consul.io/docs/commands#environment-variables).
+[Documentation](https://developer.hashicorp.com/consul/docs/commands#environment-variables).
 
-## Vault Variables
+## Vault variables
 
-Secrets can be read from [Vault](https://www.vaultproject.io/) and used within
-your template as user variables. the `vault` function is available _only_
-within the default value of a user variable, allowing you to default a user
-variable to a vault secret.
+Packer can read secrets read from HashiCorp Vault and add them to your template as user variables. You can only use the `vault` function 
+in the default value of a user variable. This allows you to default a user variable to a Vault secret. Refer to the [Vault documentation](https://developer.hashicorp.com/vault/docs/secrets) for additional information about integrating with Vault secrets engines. 
 
 An example of using a v2 kv engine:
 
@@ -197,16 +195,16 @@ The full list of available environment variables is:
 ```
 
 and detailed documentation for usage of each of those variables can be found
-[here](https://www.vaultproject.io/docs/commands/#environment-variables).
+[here](https://developer.hashicorp.com/vault/docs/commands#environment-variables).
 
-## AWS Secrets Manager Variables
+## AWS Secrets Manager variables
 
 Secrets can be read from [AWS Secrets Manager](https://aws.amazon.com/secrets-manager/)
 and used within your template as user variables. The `aws_secretsmanager` function is
 available _only_ within the default value of a user variable, allowing you to default
 a user variable to an AWS Secrets Manager secret.
 
-### Plaintext Secrets
+### Plaintext secrets
 
 ```json
 {
@@ -220,7 +218,7 @@ In the example above it is assumed that the secret `globalpassword` is not
 stored as a key pair but as a single non-JSON string value. Which the
 `aws_secretsmanager` function will return as a raw string.
 
-### Single Key Secrets
+### Single key secrets
 
 ```json
 {
@@ -234,7 +232,7 @@ In the example above it is assumed that only one key is stored in
 `sample/app/password` if there are multiple keys stored in it then you need
 to indicate the specific key you want to fetch as shown below.
 
-### Multiple Key Secrets
+### Multiple key secrets
 
 ```json
 {
@@ -253,7 +251,7 @@ one of the following methods:
 - [Container Credentials](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-iam-roles.html)
 - [Instance Profile Credentials](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/iam-roles-for-amazon-ec2.html)
 
-## Using array values
+## Use array values
 
 Some templates call for array values. You can use template variables for these,
 too. For example, the `amazon-ebs` builder has a configuration parameter called
@@ -288,13 +286,13 @@ by a `,`. For example:
 }
 ```
 
-## Setting Variables
+## Set variables
 
 Now that we covered how to define and use user variables within a template, the
 next important point is how to actually set these variables. Packer exposes two
 methods for setting user variables: from the command line or from a file.
 
-### From the Command Line
+### CLI
 
 To set user variables from the command line, the `-var` flag is used as a
 parameter to `packer build` (and some other commands). Continuing our example
@@ -318,7 +316,7 @@ your variables rather than single-quoting them. For example:
 
 `packer build -var "aws_secret_key=foo" template.json`
 
-### From a File
+### From file
 
 Variables can also be set from an external JSON file. The `-var-file` flag
 reads a file containing a key/value mapping of variables to values and sets
@@ -365,7 +363,7 @@ Results in the following variables:
 | aws_access_key | foo   |
 | aws_secret_key | baz   |
 
-# Sensitive Variables
+## Sensitive variables
 
 If you use the environment to set a variable that is sensitive, you probably
 don't want that variable printed to the Packer logs. You can make sure that
@@ -391,9 +389,9 @@ instances of "bar" and of whatever the value of "my_secret" is with
 `<sensitive>`. This allows you to be confident that you are not printing
 secrets in plaintext to our logs by accident.
 
-# Recipes
+## Recipes
 
-## Making a provisioner step conditional on the value of a variable
+### Make a provisioner step conditional on the value of a variable
 
 There is no specific syntax in Packer templates for making a provisioner step
 conditional, depending on the value of a variable. However, you may be able to
@@ -408,7 +406,7 @@ example, here is how to make a `shell-local` provisioner only run if the
 }
 ```
 
-## Using HOME Variable
+### Using HOME Variable
 
 In order to use `$HOME` variable, you can create a `home` variable in Packer:
 

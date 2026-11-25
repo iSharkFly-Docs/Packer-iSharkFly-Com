@@ -1,14 +1,14 @@
 ---
-title: legacy_isotime - Functions - Configuration Language
+title: legacy_isotime function reference
 description: |-
-  The legacy_isotime function returns a string representation of the current date
-  and time.
+  The `legacy_isotime` function returns a string representation of the current date
+  and time. Learn how to use the `legacy_isotime` function in Packer templates.
 ---
 
 # `legacy_isotime` Function
 
 The `legacy_isotime` function returns the current date and time using the given format string.
-The format string follows golang's datetime formatting. See
+The format string follows Go's datetime formatting. See
 [isotime-function-format-reference](/docs/templates/legacy_json_templates/engine#isotime-function-format-reference)
 for more details.
 

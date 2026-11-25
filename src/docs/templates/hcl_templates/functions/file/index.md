@@ -1,4 +1,0 @@
----
-title: filesystem - Functions - Configuration Language
-description: Overview of available filesystem functions
----

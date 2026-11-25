@@ -1,28 +1,16 @@
 ---
-title: HCL Templates
+title: HCL templates overview
 description: |-
-  Packer uses text files to describe infrastructure and to set variables.
-  These text files are called Packer _configurations_ and are
-  written in the HCL2 HashiCorp Configuration Language.
+  HCL templates are configuration files that describe infrastructure and set variables using HashiCorp configuration language (HCL). Learn about HCL templates for Packer.
 ---
 
-# HCL Configuration Language
+# HCL templates overview
 
-::: info
-**Note:** This page is about HCL2 Packer templates. HCL2 templates
-were first introduced as a beta feature into Packer version 1.5. As of v1.7,
-HCL2 support is no longer in beta, and is the preferred way to write Packer
-configuration. For the old-style stable configuration language see
-[template docs](/docs/templates/legacy_json_templates/). As of v1.6.2, you can
-convert your legacy JSON template into an HCL2 config file using the
-[hcl2_upgrade command](/docs/commands/hcl2_upgrade).
-:::
+This topic provides overview information about HashiCorp configuration language (HCL) templates for Packer.
 
-Packer uses the Hashicorp Configuration Language - HCL - designed to allow
-concise descriptions of the required steps to get to a build file. This page
-describes the features of HCL2 exhaustively, if you would like to give a quick
-try to HCL2, you can also read the quicker [HCL2 getting started
-guide](/guides/hcl/).
+## Introduction
+
+Packer reads and applies configurations defined in HCL template files. HCL templates provide concise descriptions of the required steps to get to a build file. You can add arguments, blocks, and expressions to your HCL templates to define your build as code. Refer to [Introduction to Packer HCL2](/guides/hcl/) for additional information.
 
 ## Builds
 
@@ -36,7 +24,7 @@ the HCL2 format. When a file ending with `.pkr.hcl` or `.pkr.json` is passed it
 will be parsed using the HCL2 schema. For every other case; the _JSON only_ old
 packer schema will be used.
 
-## Arguments, Blocks, and Expressions
+## Arguments, blocks, and expressions
 
 The syntax of the HCL language consists of only a few basic elements:
 
@@ -66,7 +54,7 @@ For full details about Packer's syntax, see:
 - [Configuration Syntax](/docs/templates/hcl_templates/syntax)
 - [Expressions](/docs/templates/hcl_templates/expressions)
 
-## Code Organization
+## Code organization
 
 The HCL language uses configuration files that are named with the `.pkr.hcl`
 file extension. There is also [a JSON-based variant of the
@@ -77,7 +65,7 @@ Configuration files must always use UTF-8 encoding, and by convention are
 usually maintained with Unix-style line endings (LF) rather than Windows-style
 line endings (CRLF), though both are accepted.
 
-## Configuration Ordering
+## Configuration ordering
 
 The ordering of root blocks is not significant. The order of `provisioner` or
 `post-processor` blocks within a `build` is the only major feature where block

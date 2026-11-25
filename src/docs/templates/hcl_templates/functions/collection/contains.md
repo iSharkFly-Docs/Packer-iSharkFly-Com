@@ -1,6 +1,6 @@
 ---
-title: contains - Functions - Configuration Language
-description: The contains function determines whether a list or set contains a given value.
+title: contains function reference
+description: The `contains` function determines whether a list or set contains a given value. Learn how to use the `contains` function in Packer templates.
 ---
 
 # `contains` Function

@@ -1,20 +1,14 @@
 ---
 description: |
-  The post-processor block defines how a post-processor is configured.
-title: post-processor - build - Blocks
+  The `post-processor` block defines post-processor behavior after a `packer build` command. Learn how to configure `post-processor` blocks in your Packer templates. 
+title: post-processor block reference
 ---
 
-# The `post-processor` block
+# `post-processor` block
 
-::: info
-**Note:** This page is about HCL2 Packer templates. HCL2 templates
-were first introduced as a beta feature into Packer version 1.5. As of v1.7,
-HCL2 support is no longer in beta, and is the preferred way to write Packer
-configuration. For the old-style stable configuration language see
-[template docs](/docs/templates/legacy_json_templates/). As of v1.6.2, you can
-convert your legacy JSON template into an HCL2 config file using the
-[hcl2_upgrade command](/docs/commands/hcl2_upgrade).
-:::
+This topic provides reference information about the `post-processor` block. 
+
+## Description
 
 The `post-processor` block defines how a post-processor is configured.
 

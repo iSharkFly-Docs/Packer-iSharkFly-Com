@@ -1,8 +1,8 @@
 ---
-title: trim - Functions - Configuration Language
+title: trim function reference
 description: |-
-  The trim function removes the specified characters from the start and end of
-  a given string.
+  The `trim` function removes the specified characters from the start and end of
+  a given string. 
 ---
 
 # `trim` Function

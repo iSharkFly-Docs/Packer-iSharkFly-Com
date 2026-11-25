@@ -1,17 +1,17 @@
 ---
 description: |
-  The Packer compress post-processor takes an artifact with files (such as from
-  VMware or VirtualBox) and compresses the artifact into a single archive.
-title: Compress - Post-Processors
+  The `compress` post-processor compresses an artifact that contains multiple files, such as VMware of VirtualBox builds, into a single archive.
+title: compress post-processor reference
 ---
 
-# Compress Post-Processor
+<Badge type="tip" text="Official" />
 
-Type: `compress`
+# `compress` post-processor
+
 Artifact BuilderId: `packer.post-processor.compress`
 
-The Packer compress post-processor takes an artifact with files (such as from
-VMware or VirtualBox) and compresses the artifact into a single archive.
+The Packer compress post-processor takes an artifact with files, such as from
+VMware or VirtualBox, and compresses the artifact into a single archive.
 
 ## Configuration
 

@@ -1,6 +1,6 @@
 ---
-title: values - Functions - Configuration Language
-description: The values function returns a list of the element values in a given map.
+title: values function reference
+description: The `values` function returns a list of the element values in a given map. Learn how to use the `values` function in Packer templates.
 ---
 
 # `values` Function

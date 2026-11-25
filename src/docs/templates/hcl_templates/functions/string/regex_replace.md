@@ -1,12 +1,7 @@
 ---
-title: regex_replace - Functions - Configuration Language
+title: regex_replace function reference
 description: >-
-  The regex_replace function searches a given string for another given
-  substring,
-
-  and replaces all occurrences with a given replacement string. The substring
-
-  argument can be a valid regular expression or a string.
+  The `regex_replace` function matches and replaces all occurrences of a substring with a replacement string. 
 ---
 
 # `regex_replace` Function
@@ -34,7 +29,7 @@ hello everybody
 > regex_replace("hello world", "w.*d", "everybody")
 hello everybody
 
-> regex_replace("-ab-axxb-", "a(x*)b", "$1W)
+> regex_replace("-ab-axxb-", "a(x*)b", "$1W")
 ---
 
 > regex_replace("-ab-axxb-", "a(x*)b", "${1}W")

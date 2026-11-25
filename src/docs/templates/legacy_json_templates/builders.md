@@ -1,11 +1,12 @@
 ---
 description: >
-  Within the template, the builders section contains an array of all the
-  builders
-
-  that Packer should use to generate machine images for the template.
-title: Builders - Templates
+  The `builders` block contains builders that create machines and generate images. Learn how to configure the `builders` block in JSON templates for Packer.
+title: builders reference for JSON templates
 ---
+
+# `builders` reference for JSON templates
+
+This topic provides reference information about the `builders` block in JSON templates.
 
 ::: info
 **Note:** This page is about older-style JSON Packer templates. JSON
@@ -13,15 +14,15 @@ templates are still supported by the Packer core, but new features added to the
 Packer core may not be implemented for JSON templates. We recommend you
 transition to HCL templates as soon as is convenient for you, in order to have
 the best possible experience with Packer. To help you upgrade your templates,
-we have written an [hcl2_upgrade command](/docs/commands/hcl2_upgrade) command.
+we have written an [hcl2_upgrade command](/docs/commands/hcl2_upgrade).
 :::
 
-# Template Builders
+## Introduction
 
-Within the template, the builders section contains an array of all the builders
+The `builders` block contains an array of all the builders
 that Packer should use to generate machine images for the template.
 
-Builders are responsible for creating machines and generating images from them
+Builders create machines and generate images from them
 for various platforms. For example, there are separate builders for EC2,
 VMware, VirtualBox, etc. Packer comes with many builders by default, and can
 also be extended to add new builders.

@@ -1,20 +1,16 @@
 ---
 description: |
-  shell-local will run a shell script of your choosing on the machine where
-  Packer is being run - in other words, shell-local will run the shell script on
-  your build server, or your desktop, etc., rather than the remote/guest machine
-  being provisioned by Packer.
-title: Shell (Local) - Provisioners
+  The `shell-local` Packer provisioner runs shell scripts on the machine where Packer is running. Learn how to use the `shell-local` provisioner to run a shell script on your build server, desktop, or other local machine.
+title: shell-local provisioner reference
 ---
 
-# Local Shell Provisioner
+<Badge type="tip" text="Official" />
 
-Type: `shell-local`
+# `shell-local` provisioner
 
-shell-local will run a shell script of your choosing on the machine where
-Packer is being run - in other words, shell-local will run the shell script on
-your build server, or your desktop, etc., rather than the remote/guest machine
-being provisioned by Packer.
+The `shell-local` provisioner runs shell scripts on the machine where
+Packer is running. Use the provisioner to run a shell script on your build server, desktop, or other local machine instead of the remote or guest machine you are 
+using Packer to provision.
 
 The [remote shell](/docs/provisioners/shell) provisioner executes shell
 scripts on a remote machine.
@@ -79,7 +75,7 @@ Exactly _one_ of the following is required:
 
 - `command` (string) - This is a single command to execute. It will be
   written to a temporary file and run using the `execute_command` call below.
-  If you are building a windows vm on AWS, Azure, Google Compute, or OpenStack
+  If you are building a Windows VM on AWS, Azure, Google Compute, or OpenStack
   and would like to access the generated password that Packer uses to connect
   to the instance via WinRM, you can use the template variable `{{.WinRMPassword}}`
   to set this as an environment variable.
@@ -102,11 +98,16 @@ Exactly _one_ of the following is required:
 
 Optional parameters:
 
+- `env` (map of strings) - A map of key/value pairs to inject prior to the
+  execute_command. Packer injects some environmental variables by default into
+  the environment, as well, which are covered in the section below. Duplicate
+  `env` settings override `environment_vars` settings.
+
 - `environment_vars` (array of strings) - An array of key/value pairs to
   inject prior to the `execute_command`. The format should be `key=value`.
   Packer injects some environmental variables by default into the
   environment, as well, which are covered in the section below. If you are
-  building a windows vm on AWS, Azure, Google Compute, or OpenStack and would
+  building a Windows VM on AWS, Azure, Google Compute, or OpenStack and would
   like to access the generated password that Packer uses to connect to the
   instance via WinRM, you can use the template variable `{{.WinRMPassword}}`
   to set this as an environment variable. For example:
@@ -120,8 +121,8 @@ Optional parameters:
   it is necessary below.
 
 - `execute_command` (array of strings) - The command used to execute the
-  script. By default this is `["/bin/sh", "-c", "{{.Vars}}", "{{.Script}}"]`
-  on unix and `["cmd", "/c", "{{.Vars}}", "{{.Script}}"]` on windows. This is
+  script. By default this is `["/bin/sh", "-c", "{{.Vars}} {{.Script}}"]`
+  on Unix and `["cmd", "/c", "{{.Vars}}", "{{.Script}}"]` on Windows. This is
   treated as a [template engine](/docs/templates/legacy_json_templates/engine). There are two
   available variables: `Script`, which is the path to the script to run, and
   `Vars`, which is the list of `environment_vars`, if configured.
@@ -141,7 +142,7 @@ Optional parameters:
   sake of clarity, as even when you set only a single `command` to run,
   Packer writes it to a temporary file and then runs it as a script.
 
-  If you are building a windows vm on AWS, Azure, Google Compute, or OpenStack
+  If you are building a Windows VM on AWS, Azure, Google Compute, or OpenStack
   and would like to access the generated password that Packer uses to connect
   to the instance via WinRM, you can use the template variable `{{.WinRMPassword}}`
   to set this as an environment variable.
@@ -155,16 +156,16 @@ Optional parameters:
   provisioner.
 
 - `only_on` (array of strings) - This is an array of [runtime operating
-  systems](https://golang.org/doc/install/source#environment) where
+  systems](https://go.dev/doc/install/source#environment) where
   `shell-local` will execute. This allows you to execute `shell-local` _only_
   on specific operating systems. By default, shell-local will always run if
   `only_on` is not set."
 
-- `use_linux_pathing` (bool) - This is only relevant to windows hosts. If you
+- `use_linux_pathing` (bool) - This is only relevant to Windows hosts. If you
   are running Packer in a Windows environment with the Windows Subsystem for
   Linux feature enabled, and would like to invoke a bash script rather than
   invoking a Cmd script, you'll need to set this flag to true; it tells
-  Packer to use the linux subsystem path for your script rather than the
+  Packer to use the Linux subsystem path for your script rather than the
   Windows path. (e.g. /mnt/c/path/to/your/file instead of
   C:/path/to/your/file). Please see the example below for more guidance on
   how to use this feature. If you are not on a Windows host, or you do not
@@ -380,7 +381,7 @@ _must_ be extra careful to `exit 0` when necessary.
 
 ### Windows Host
 
-Example of running a .cmd file on windows:
+Example of running a .cmd file on Windows:
 
 <Tabs groupId="template-format" :tabs="[{label:'HCL2',value:'t0'},{label:'JSON',value:'t1'}]">
 
@@ -413,7 +414,7 @@ Contents of "test_cmd.cmd":
 
     echo %SHELLLOCALTEST%
 
-Example of running an inline command on windows: Required customization:
+Example of running an inline command on Windows: Required customization:
 tempfile_extension
 
 <Tabs groupId="template-format" :tabs="[{label:'HCL2',value:'t0'},{label:'JSON',value:'t1'}]">
@@ -422,8 +423,8 @@ tempfile_extension
 
 ```hcl
 provisioner "shell-local" {
-  environment_vars   = ["SHELLLOCALTEST=ShellTest2"],
-  tempfile_extension = ".cmd",
+  environment_vars   = ["SHELLLOCALTEST=ShellTest2"]
+  tempfile_extension = ".cmd"
   inline             = [echo "%SHELLLOCALTEST%"]
 }
 ```
@@ -445,7 +446,7 @@ provisioner "shell-local" {
 
 </Tabs>
 
-Example of running a bash command on windows using WSL: Required
+Example of running a bash command on Windows using WSL: Required
 customizations: use_linux_pathing and execute_command
 
 <Tabs groupId="template-format" :tabs="[{label:'HCL2',value:'t0'},{label:'JSON',value:'t1'}]">
@@ -454,7 +455,7 @@ customizations: use_linux_pathing and execute_command
 
 ```hcl
 provisioner "shell-local" {
-  environment_vars  = ["SHELLLOCALTEST=ShellTest3"],
+  environment_vars  = ["SHELLLOCALTEST=ShellTest3"]
   execute_command   = ["bash", "-c", "{{.Vars}} {{.Script}}"]
   use_linux_pathing = true
   script            = "./scripts/example_bash.sh"
@@ -484,7 +485,7 @@ Contents of `example_bash.sh`:
     #!/bin/bash
     echo $SHELLLOCALTEST
 
-Example of running a powershell script on windows: Required customizations:
+Example of running a PowerShell script on Windows: Required customizations:
 `env_var_format` and `execute_command`
 
 <Tabs groupId="template-format" :tabs="[{label:'HCL2',value:'t0'},{label:'JSON',value:'t1'}]">
@@ -518,7 +519,7 @@ provisioner "shell-local" {
 
 </Tabs>
 
-Example of running a powershell script on windows as "inline": Required
+Example of running a PowerShell script on Windows as "inline": Required
 customizations: `env_var_format`, `tempfile_extension`, and `execute_command`
 
 <Tabs groupId="template-format" :tabs="[{label:'HCL2',value:'t0'},{label:'JSON',value:'t1'}]">
@@ -556,7 +557,7 @@ provisioner "shell-local" {
 
 ### Unix Host
 
-Example of running a Shell script on unix:
+Example of running a Shell script on Unix:
 
 <Tabs groupId="template-format" :tabs="[{label:'HCL2',value:'t0'},{label:'JSON',value:'t1'}]">
 
@@ -585,7 +586,7 @@ provisioner "shell-local" {
 
 </Tabs>
 
-Example of running a Shell script "inline" on unix:
+Example of running a Shell script "inline" on Unix:
 
 <Tabs groupId="template-format" :tabs="[{label:'HCL2',value:'t0'},{label:'JSON',value:'t1'}]">
 
@@ -615,7 +616,7 @@ provisioner "shell-local" {
 
 </Tabs>
 
-Example of running a Python script on unix:
+Example of running a Python script on Unix:
 
 <Tabs groupId="template-format" :tabs="[{label:'HCL2',value:'t0'},{label:'JSON',value:'t1'}]">
 

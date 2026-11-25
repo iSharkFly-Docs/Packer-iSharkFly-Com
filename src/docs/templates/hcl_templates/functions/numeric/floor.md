@@ -1,8 +1,8 @@
 ---
-title: floor - Functions - Configuration Language
+title: floor function reference
 description: |-
-  The floor function returns the closest whole number less than or equal to
-  the given value.
+  The `floor` function returns the closest whole number less than or equal to
+  the given value. 
 ---
 
 # `floor` Function

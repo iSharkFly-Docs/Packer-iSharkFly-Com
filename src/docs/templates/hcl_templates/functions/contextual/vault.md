@@ -1,14 +1,13 @@
 ---
-title: vault - Functions - Configuration Language
-description: The vault function retrieves secrets from HashiCorp Vault KV stores.
+title: vault function reference
+description: The `vault` function retrieves secrets from HashiCorp Vault KV stores. Learn how to use the `vault` function in Packer templates.
 ---
 
 # `vault` Function
 
-Secrets can be read from [Vault](https://www.vaultproject.io/) and used within
-your template as user variables. the `vault` function is available _only_
-within the default value of a user variable, allowing you to default a user
-variable to a vault secret.
+Retrieves secrets from a HashiCorp Vault KV store. Packer can read secrets from and add them to your template as user variables. The `vault` function is available only within the default value of a user variable, allowing you to default a user variable to a vault secret.
+
+Refer to the [Vault documentation](https://developer.hashicorp.com/vault/docs/commands/kv) for additional information about the Vault KV store.
 
 An example of using a v2 kv engine:
 
@@ -41,7 +40,25 @@ locals {
 This example accesses the Vault path `secret/foo` and returns the value
 stored at the key `foo`, storing it as the local variable `local.foo`.
 
-In order for this to work, you must set the environment variables `VAULT_TOKEN`
+If the Vault secret contains a highly sensitive value the `local` block, not to be confused with
+the `locals` block, can be used to mark the value as sensitive.
+
+```hcl
+local "foo" {
+    expression = vault("secrets/hello", "foo")
+    sensitive  = true
+}
+```
+
+The `local` block example accesses the Vault path `secrets/foo` and returns the value
+stored at the key `foo`, storing it as the local variable `local.foo`. However, the output of
+the newly stored local variable will be filtered from the Packer build output, and replaced
+with the value `<sensitive>`. See [Local Values](/docs/templates/hcl_templates/locals) for more details.
+
+
+## Usage
+
+In order for the Vault function to work, you must set the environment variables `VAULT_TOKEN`
 and `VAULT_ADDR` to valid values.
 
 ::: info
@@ -73,4 +90,4 @@ The full list of available environment variables is:
 ```
 
 and detailed documentation for usage of each of those variables can be found
-[here](https://www.vaultproject.io/docs/commands/#environment-variables).
+[here](https://developer.hashicorp.com/vault/docs/commands#environment-variables).

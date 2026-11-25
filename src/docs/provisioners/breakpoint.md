@@ -1,30 +1,47 @@
 ---
 description: >
-  The breakpoint provisioner will pause until the user presses "enter" to resume
-
-  the build. This is intended for debugging purposes, and allows you to halt at
-  a
-
-  particular part of the provisioning process.
-title: breakpoint - Provisioners
+  The `breakpoint` provisioner pauses a build until you press the Enter key. Use the `breakpoint` provisioner to help you debug errors.
+title: breakpoint provisioner reference
 ---
 
-# Breakpoint Provisioner
+<Badge type="tip" text="Official" />
 
-Type: `breakpoint`
+# `breakpoint` provisioner
 
-The breakpoint provisioner will pause until the user presses "enter" to resume
-the build. This is intended for debugging purposes, and allows you to halt at a
-particular part of the provisioning process.
+The `breakpoint` provisioner pauses the build operation until you press the Enter key to resume the build. Use the `breakpoint` provisioner to help you debug errors.
 
-This is independent of the `-debug` flag, which will instead halt at every step
-and between every provisioner.
+Alternatively, you can add the [`-debug` flag](/docs/commands/build#debug) when running your build to halt the operation at every step and between every provisioner. 
 
 ## Basic Example
 
-<Tabs groupId="template-format" :tabs="[{label:'JSON',value:'t0'},{label:'HCL2',value:'t1'}]">
+<Tabs groupId="template-format" :tabs="[{label:'HCL2',value:'t0'},{label:'JSON',value:'t1'}]">
 
 <TabItem value="t0">
+
+```hcl
+source "null" "example" {
+  communicator = "none"
+}
+
+build {
+  sources = ["source.null.example"]
+
+  provisioner "shell-local" {
+    inline = ["echo hi"]
+  }
+  provisioner "breakpoint" {
+    disable = false
+    note    = "this is a breakpoint"
+  }
+  provisioner "shell-local" {
+    inline = ["echo hi 2"]
+  }
+}
+```
+
+</TabItem>
+
+<TabItem value="t1">
 
 ```json
 {
@@ -49,31 +66,6 @@ and between every provisioner.
       "inline": "echo hi 2"
     }
   ]
-}
-```
-
-</TabItem>
-
-<TabItem value="t1">
-
-```hcl
-source "null" "example" {
-  communicator = "none"
-}
-
-build {
-  sources = ["source.null.example"]
-
-  provisioner "shell-local" {
-    inline = ["echo hi"]
-  }
-  provisioner "breakpoint" {
-    disable = false
-    note    = "this is a breakpoint"
-  }
-  provisioner "shell-local" {
-    inline = ["echo hi 2"]
-  }
 }
 ```
 

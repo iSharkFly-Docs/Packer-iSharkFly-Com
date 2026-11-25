@@ -1,23 +1,18 @@
 ---
 description: |
-  The source block defines what builders are started.
-title: build - Blocks
+  The `build` block contains instructions for Packer to follow during a build. Learn how to configure the `build` block in your Packer templates.
+title: build block reference
 ---
 
-# The `build` block
+# `build` block
 
-::: info
-**Note:** This page is about HCL2 Packer templates. HCL2 templates
-were first introduced as a beta feature into Packer version 1.5. As of v1.7,
-HCL2 support is no longer in beta, and is the preferred way to write Packer
-configuration. For the old-style stable configuration language see
-[template docs](/docs/templates/legacy_json_templates/). As of v1.6.2, you can
-convert your legacy JSON template into an HCL2 config file using the
-[hcl2_upgrade command](/docs/commands/hcl2_upgrade).
-:::
+This topic provides reference information about the `build` block.
 
-The `build` block defines what builders are started, how to `provision` them
-and if necessary what to do with their artifacts using `post-process`.
+
+## Description 
+
+The `build` block specifies which builders Packer should run, how to provision them,
+and any post-processing actions Packer should perform on the resulting artifacts.
 
 To use builders in a `build` block you can either:
 
@@ -113,7 +108,7 @@ matching **builders** (source) or all referenced builders 'except' the matching
 ones, for example with the same config file:
 
 ```shellsession
-> packer build -only "*.second" ./folder
+> packer build -only "*.second-example" ./folder
 Build 'null.second-example' finished.
 Build 'a.null.second-example' finished.
 
@@ -131,7 +126,5 @@ this is soon going to be possible. So here "a.\*" will match nothing.
 
 ## Related
 
-- A list of [community
-  builders](/community-tools#community-builders) is available.
-
-- Create your own [custom builder](/docs/plugins/creation/custom-builders) !
+- Refer to the [community builders reference](/docs/community-tools#community-builders) for information about builders maintained by the community.
+- Refer to [Create Custom Builders](/docs/plugins/creation/custom-builders) for instructions on how to create your own builders.
