@@ -1,17 +1,34 @@
 ---
 description: |
-  Data sources allow data to be fetched for use in Packer configuration. Use of data sources
-  allows a build to use information defined outside of Packer.
-page_title: Data Sources
+  The Amazon plugin is able to fetch data from AWS. To achieve this, the plugin comes with
+  data sources to retrieve AMI and secrets information.
+page_title: Amazon - Data Sources
+sidebar_title: Overview
 ---
 
-# Data Sources
+# Amazon Data Sources
 
-Data sources allow data to be fetched for use in Packer configuration. Use of data sources
-allows a build to use information defined outside of Packer.
+The Amazon plugin is able to fetch data from AWS. To achieve this, the plugin comes with data sources to retrieve AMI and secrets information.
+Packer supports the following data sources at the moment:
 
-See the [`data`](/docs/templates/hcl_templates/datasources) block documentation to learn more
-about working with data sources. For information on an individual data source,
-choose it from the sidebar.
+- [amazon-ami](/docs/datasources/amazon/ami) - Filter and fetch an Amazon AMI to output all the AMI information.
 
--> **Note:** Data sources is a feature exclusively available to HCL2 templates included in Packer `v1.7.0` (and newer).
+- [amazon-secretsmanager](/docs/datasources/amazon/secretsmanager) - Retrieve information
+about a Secrets Manager secret version, including its secret value.
+
+## How to use this plugin
+
+From Packer v1.7.0, copy and paste this code into your Packer configuration to install this plugin.
+Then, run [`packer init`](/docs/commands/init).
+
+```hcl
+packer {
+  required_plugins {
+    amazon = {
+      version = ">= 0.0.1"
+      source = "github.com/hashicorp/amazon"
+    }
+  }
+}
+```
+

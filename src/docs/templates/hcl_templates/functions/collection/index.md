@@ -1,0 +1,4 @@
+---
+title: Collection - Functions - Configuration Language
+description: Overview of available collection functions
+---

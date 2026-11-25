@@ -1,0 +1,29 @@
+---
+title: substr - Functions - Configuration Language
+description: |-
+  The substr function extracts a substring from a given string by offset and
+  length.
+---
+
+# `substr` Function
+
+`substr` extracts a substring from a given string by offset and length.
+
+```hcl
+substr(string, offset, length)
+```
+
+## Examples
+
+```shellsession
+> substr("hello world", 1, 4)
+ello
+```
+
+The offset and length are both counted in _unicode characters_ rather than
+bytes:
+
+```shellsession
+> substr("🤔🤷", 0, 1)
+🤔
+```

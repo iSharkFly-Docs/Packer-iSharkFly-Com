@@ -1,0 +1,193 @@
+---
+description: |
+  The salt-masterless Packer provisioner provisions machines built by Packer
+  using Salt states, without connecting to a Salt master.
+title: Salt Masterless - Provisioners
+---
+
+# Salt Masterless Provisioner
+
+::: warning
+**This community maintained provisioner is currently unmaintained**; if you are interested in contributing or taking ownership of it, please reach out to us at [packer@hashicorp.com](mailto://packer@hashicorp.com). More details can be found in the [README](https://github.com/hashicorp/packer/blob/master/README.md#unmaintained-plugins).
+:::
+
+Type: `salt-masterless`
+
+The `salt-masterless` Packer provisioner provisions machines built by Packer
+using [Salt](https://saltproject.io/) states, without connecting to a Salt
+master.
+
+## Basic Example
+
+The example below is fully functional.
+
+<Tabs groupId="template-format" :tabs="[{label:'HCL2',value:'t0'},{label:'JSON',value:'t1'}]">
+
+<TabItem value="t0">
+
+```hcl
+provisioner "salt-masterless" {
+  local_state_tree = "/Users/me/salt"
+}
+```
+
+</TabItem>
+
+<TabItem value="t1">
+
+```json
+{
+  "type": "salt-masterless",
+  "local_state_tree": "/Users/me/salt"
+}
+```
+
+</TabItem>
+
+</Tabs>
+
+## Configuration Reference
+
+The reference of available configuration options is listed below. The only
+required element is "local_state_tree".
+
+Required:
+
+- `local_state_tree` (string) - The path to your local [state
+  tree](http://docs.saltproject.io/en/latest/ref/states/highstate.html#the-salt-state-tree).
+  This will be uploaded to the `remote_state_tree` on the remote.
+
+Optional:
+
+- `bootstrap_args` (string) - Arguments to send to the bootstrap script.
+  Usage is somewhat documented on
+  [github](https://github.com/saltstack/salt-bootstrap), but the [script
+  itself](https://github.com/saltstack/salt-bootstrap/blob/develop/bootstrap-salt.sh)
+  has more detailed usage instructions. By default, no arguments are sent to
+  the script.
+
+- `disable_sudo` (boolean) - By default, the bootstrap install command is
+  prefixed with `sudo`. When using a Docker builder, you will likely want to
+  pass `true` since `sudo` is often not pre-installed.
+
+- `remote_pillar_roots` (string) - The path to your remote [pillar
+  roots](http://docs.saltproject.io/en/latest/ref/configuration/master.html#pillar-configuration).
+  default: `/srv/pillar`. This option cannot be used with `minion_config`.
+
+- `remote_state_tree` (string) - The path to your remote [state
+  tree](http://docs.saltproject.io/en/latest/ref/states/highstate.html#the-salt-state-tree).
+  default: `/srv/salt`. This option cannot be used with `minion_config`.
+
+- `local_pillar_roots` (string) - The path to your local [pillar
+  roots](http://docs.saltproject.io/en/latest/ref/configuration/master.html#pillar-configuration).
+  This will be uploaded to the `remote_pillar_roots` on the remote.
+
+- `custom_state` (string) - A state to be run instead of `state.highstate`.
+  Defaults to `state.highstate` if unspecified.
+
+- `minion_config` (string) - The path to your local [minion config
+  file](http://docs.saltproject.io/en/latest/ref/configuration/minion.html). This will
+  be uploaded to the `/etc/salt` on the remote. This option overrides the
+  `remote_state_tree` or `remote_pillar_roots` options.
+
+- `grains_file` (string) - The path to your local [grains
+  file](https://docs.saltproject.io/en/latest/topics/grains). This will be
+  uploaded to `/etc/salt/grains` on the remote.
+
+- `skip_bootstrap` (boolean) - By default the salt provisioner runs [salt
+  bootstrap](https://github.com/saltstack/salt-bootstrap) to install salt.
+  Set this to true to skip this step.
+
+- `temp_config_dir` (string) - Where your local state tree will be copied
+  before moving to the `/srv/salt` directory. Default is `/tmp/salt`.
+
+- `no_exit_on_failure` (boolean) - Packer will exit if the `salt-call`
+  command fails. Set this option to true to ignore Salt failures.
+
+- `log_level` (string) - Set the logging level for the `salt-call` run.
+
+- `salt_call_args` (string) - Additional arguments to pass directly to
+  `salt-call`. See
+  [salt-call](https://docs.saltproject.io/en/latest/ref/cli/salt-call.html)
+  documentation for more information. By default no additional arguments
+  (besides the ones Packer generates) are passed to `salt-call`.
+
+- `salt_bin_dir` (string) - Path to the `salt-call` executable. Useful if it
+  is not on the PATH.
+
+- `guest_os_type` (string) - The target guest OS type, either "unix" or
+  "windows".
+
+- `formulas` (array of strings) - An array of git source formulas to be downloaded to the local
+  state tree prior to moving to the remote state tree. Note: `//directory` must be included in
+  the URL to download the appropriate formula directory. Example:
+  `git::https://github.com/saltstack-formulas/vault-formula.git//vault?ref=v1.2.3`
+
+Parameters common to all provisioners:
+
+- `pause_before` (duration) - Sleep for duration before execution.
+
+- `max_retries` (int) - Max times the provisioner will retry in case of failure. Defaults to zero (0). Zero means an error will not be retried.
+
+- `only` (array of string) - Only run the provisioner for listed builder(s)
+  by name.
+
+- `override` (object) - Override the builder with different settings for a
+  specific builder, eg :
+
+  In HCL2:
+
+  ```hcl
+  source "null" "example1" {
+    communicator = "none"
+  }
+
+  source "null" "example2" {
+    communicator = "none"
+  }
+
+  build {
+    sources = ["source.null.example1", "source.null.example2"]
+    provisioner "shell-local" {
+      inline = ["echo not overridden"]
+      override = {
+        example1 = {
+          inline = ["echo yes overridden"]
+        }
+      }
+    }
+  }
+  ```
+
+  In JSON:
+
+  ```json
+  {
+    "builders": [
+      {
+        "type": "null",
+        "name": "example1",
+        "communicator": "none"
+      },
+      {
+        "type": "null",
+        "name": "example2",
+        "communicator": "none"
+      }
+    ],
+    "provisioners": [
+      {
+        "type": "shell-local",
+        "inline": ["echo not overridden"],
+        "override": {
+          "example1": {
+            "inline": ["echo yes overridden"]
+          }
+        }
+      }
+    ]
+  }
+  ```
+
+- `timeout` (duration) - If the provisioner takes more than for example
+  `1h10m1s` or `10m` to finish, the provisioner will timeout and fail.
