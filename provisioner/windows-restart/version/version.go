@@ -1,3 +1,6 @@
+// Copyright IBM Corp. 2024, 2026
+// SPDX-License-Identifier: BUSL-1.1
+
 package version
 
 import (
@@ -8,6 +11,6 @@ import (
 var WindowsRestartPluginVersion *version.PluginVersion
 
 func init() {
-	WindowsRestartPluginVersion = version.InitializePluginVersion(
-		packerVersion.Version, packerVersion.VersionPrerelease)
+	WindowsRestartPluginVersion = version.NewPluginVersion(
+		packerVersion.Version, packerVersion.VersionPrerelease, packerVersion.VersionMetadata)
 }

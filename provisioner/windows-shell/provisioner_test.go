@@ -1,9 +1,11 @@
+// Copyright IBM Corp. 2024, 2026
+// SPDX-License-Identifier: BUSL-1.1
+
 package shell
 
 import (
 	"bytes"
 	"context"
-	"io/ioutil"
 	"log"
 	"os"
 	"strings"
@@ -34,7 +36,7 @@ func TestProvisionerPrepare_extractScript(t *testing.T) {
 	}
 
 	// File contents should contain 2 lines concatenated by newlines: foo\nbar
-	readFile, err := ioutil.ReadFile(file)
+	readFile, err := os.ReadFile(file)
 	if err != nil {
 		t.Fatalf("Should not be error: %s", err)
 	}
@@ -99,7 +101,7 @@ func TestProvisionerPrepare_Script(t *testing.T) {
 	}
 
 	// Test with a good one
-	tf, err := ioutil.TempFile("", "packer")
+	tf, err := os.CreateTemp("", "packer")
 	if err != nil {
 		t.Fatalf("error tempfile: %s", err)
 	}
@@ -126,7 +128,7 @@ func TestProvisionerPrepare_ScriptAndInline(t *testing.T) {
 	}
 
 	// Test with both
-	tf, err := ioutil.TempFile("", "packer")
+	tf, err := os.CreateTemp("", "packer")
 	if err != nil {
 		t.Fatalf("error tempfile: %s", err)
 	}
@@ -146,7 +148,7 @@ func TestProvisionerPrepare_ScriptAndScripts(t *testing.T) {
 	config := testConfig()
 
 	// Test with both
-	tf, err := ioutil.TempFile("", "packer")
+	tf, err := os.CreateTemp("", "packer")
 	if err != nil {
 		t.Fatalf("error tempfile: %s", err)
 	}
@@ -173,7 +175,7 @@ func TestProvisionerPrepare_Scripts(t *testing.T) {
 	}
 
 	// Test with a good one
-	tf, err := ioutil.TempFile("", "packer")
+	tf, err := os.CreateTemp("", "packer")
 	if err != nil {
 		t.Fatalf("error tempfile: %s", err)
 	}
@@ -322,7 +324,7 @@ func TestProvisionerProvision_Inline(t *testing.T) {
 }
 
 func TestProvisionerProvision_Scripts(t *testing.T) {
-	tf, err := ioutil.TempFile("", "packer")
+	tf, err := os.CreateTemp("", "packer")
 	if err != nil {
 		t.Fatalf("error tempfile: %s", err)
 	}
@@ -354,7 +356,7 @@ func TestProvisionerProvision_Scripts(t *testing.T) {
 }
 
 func TestProvisionerProvision_ScriptsWithEnvVars(t *testing.T) {
-	tf, err := ioutil.TempFile("", "packer")
+	tf, err := os.CreateTemp("", "packer")
 	if err != nil {
 		t.Fatalf("error tempfile: %s", err)
 	}
@@ -402,12 +404,28 @@ func TestProvisioner_createFlattenedEnvVars_windows(t *testing.T) {
 		{"FOO=bar=baz"},        // User env var with value containing equals
 		{"FOO==bar"},           // User env var with value starting with equals
 	}
+	userEnvVarmapTests := []map[string]string{
+		{},
+		{
+			"BAR": "foo",
+		},
+		{
+			"BAR": "foo",
+			"YAR": "yaa",
+		},
+		{
+			"BAR": "foo=yar",
+		},
+		{
+			"BAR": "=foo",
+		},
+	}
 	expected := []string{
 		`set "PACKER_BUILDER_TYPE=iso" && set "PACKER_BUILD_NAME=vmware" && `,
-		`set "FOO=bar" && set "PACKER_BUILDER_TYPE=iso" && set "PACKER_BUILD_NAME=vmware" && `,
-		`set "BAZ=qux" && set "FOO=bar" && set "PACKER_BUILDER_TYPE=iso" && set "PACKER_BUILD_NAME=vmware" && `,
-		`set "FOO=bar=baz" && set "PACKER_BUILDER_TYPE=iso" && set "PACKER_BUILD_NAME=vmware" && `,
-		`set "FOO==bar" && set "PACKER_BUILDER_TYPE=iso" && set "PACKER_BUILD_NAME=vmware" && `,
+		`set "BAR=foo" && set "FOO=bar" && set "PACKER_BUILDER_TYPE=iso" && set "PACKER_BUILD_NAME=vmware" && `,
+		`set "BAR=foo" && set "BAZ=qux" && set "FOO=bar" && set "PACKER_BUILDER_TYPE=iso" && set "PACKER_BUILD_NAME=vmware" && set "YAR=yaa" && `,
+		`set "BAR=foo=yar" && set "FOO=bar=baz" && set "PACKER_BUILDER_TYPE=iso" && set "PACKER_BUILD_NAME=vmware" && `,
+		`set "BAR==foo" && set "FOO==bar" && set "PACKER_BUILDER_TYPE=iso" && set "PACKER_BUILD_NAME=vmware" && `,
 	}
 
 	p := new(Provisioner)
@@ -420,6 +438,7 @@ func TestProvisioner_createFlattenedEnvVars_windows(t *testing.T) {
 
 	for i, expectedValue := range expected {
 		p.config.Vars = userEnvVarTests[i]
+		p.config.Env = userEnvVarmapTests[i]
 		flattenedEnvVars = p.createFlattenedEnvVars()
 		if flattenedEnvVars != expectedValue {
 			t.Fatalf("expected flattened env vars to be: %s, got %s.", expectedValue, flattenedEnvVars)

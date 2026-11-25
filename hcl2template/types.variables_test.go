@@ -1,3 +1,6 @@
+// Copyright IBM Corp. 2024, 2026
+// SPDX-License-Identifier: BUSL-1.1
+
 package hcl2template
 
 import (
@@ -7,7 +10,6 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/hashicorp/hcl/v2"
-	packersdk "github.com/hashicorp/packer-plugin-sdk/packer"
 	"github.com/hashicorp/packer/builder/null"
 	. "github.com/hashicorp/packer/hcl2template/internal"
 	"github.com/hashicorp/packer/packer"
@@ -24,7 +26,28 @@ func TestParse_variables(t *testing.T) {
 			parseTestArgs{"testdata/variables/basic.pkr.hcl", nil, nil},
 			&PackerConfig{
 				CorePackerVersionString: lockedVersion,
-				Basedir:                 filepath.Join("testdata", "variables"),
+				Builds: Builds{
+					&BuildBlock{
+						Sources: []SourceUseBlock{
+							{
+								SourceRef: SourceRef{
+									Type: "null",
+									Name: "test",
+								},
+							},
+						},
+					},
+				},
+				Sources: map[SourceRef]SourceBlock{
+					{
+						Type: "null",
+						Name: "test",
+					}: {
+						Type: "null",
+						Name: "test",
+					},
+				},
+				Basedir: filepath.Join("testdata", "variables"),
 				InputVariables: Variables{
 					"image_name": &Variable{
 						Name:   "image_name",
@@ -102,8 +125,19 @@ func TestParse_variables(t *testing.T) {
 				},
 			},
 			false, false,
-			[]packersdk.Build{},
+			[]*packer.CoreBuild{
+				&packer.CoreBuild{
+					Type:           "null.test",
+					BuilderType:    "null",
+					Builder:        &null.Builder{},
+					Provisioners:   []packer.CoreBuildProvisioner{},
+					PostProcessors: [][]packer.CoreBuildPostProcessor{},
+					Prepared:       true,
+					SensitiveVars:  []string{"super_secret_password"},
+				},
+			},
 			false,
+			nil,
 		},
 		{"duplicate variable",
 			defaultParser,
@@ -123,8 +157,9 @@ func TestParse_variables(t *testing.T) {
 				},
 			},
 			true, true,
-			[]packersdk.Build{},
+			[]*packer.CoreBuild{},
 			false,
+			nil,
 		},
 		{"duplicate variable in variables",
 			defaultParser,
@@ -144,8 +179,9 @@ func TestParse_variables(t *testing.T) {
 				},
 			},
 			true, true,
-			[]packersdk.Build{},
+			[]*packer.CoreBuild{},
 			false,
+			nil,
 		},
 		{"duplicate local block",
 			defaultParser,
@@ -167,8 +203,9 @@ func TestParse_variables(t *testing.T) {
 				},
 			},
 			true, true,
-			[]packersdk.Build{},
+			[]*packer.CoreBuild{},
 			false,
+			nil,
 		},
 		{"invalid default type",
 			defaultParser,
@@ -188,8 +225,9 @@ func TestParse_variables(t *testing.T) {
 				},
 			},
 			true, true,
-			[]packersdk.Build{},
+			[]*packer.CoreBuild{},
 			false,
+			nil,
 		},
 
 		{"unknown key",
@@ -207,8 +245,9 @@ func TestParse_variables(t *testing.T) {
 				},
 			},
 			true, true,
-			[]packersdk.Build{},
+			[]*packer.CoreBuild{},
 			false,
+			nil,
 		},
 
 		{"unset used variable",
@@ -225,8 +264,9 @@ func TestParse_variables(t *testing.T) {
 				},
 			},
 			true, true,
-			[]packersdk.Build{},
+			[]*packer.CoreBuild{},
 			true,
+			nil,
 		},
 
 		{"unset unused variable",
@@ -258,16 +298,19 @@ func TestParse_variables(t *testing.T) {
 				},
 			},
 			true, true,
-			[]packersdk.Build{
+			[]*packer.CoreBuild{
 				&packer.CoreBuild{
 					Type:           "null",
+					BuilderType:    "null",
 					Builder:        &null.Builder{},
 					Provisioners:   []packer.CoreBuildProvisioner{},
 					PostProcessors: [][]packer.CoreBuildPostProcessor{},
 					Prepared:       true,
+					SensitiveVars:  []string{},
 				},
 			},
 			false,
+			nil,
 		},
 
 		{"locals within another locals usage in different files",
@@ -275,7 +318,28 @@ func TestParse_variables(t *testing.T) {
 			parseTestArgs{"testdata/variables/complicated", nil, nil},
 			&PackerConfig{
 				CorePackerVersionString: lockedVersion,
-				Basedir:                 "testdata/variables/complicated",
+				Builds: Builds{
+					&BuildBlock{
+						Sources: []SourceUseBlock{
+							{
+								SourceRef: SourceRef{
+									Type: "null",
+									Name: "test",
+								},
+							},
+						},
+					},
+				},
+				Sources: map[SourceRef]SourceBlock{
+					{
+						Type: "null",
+						Name: "test",
+					}: {
+						Type: "null",
+						Name: "test",
+					},
+				},
+				Basedir: "testdata/variables/complicated",
 				InputVariables: Variables{
 					"name_prefix": &Variable{
 						Name:   "name_prefix",
@@ -323,8 +387,19 @@ func TestParse_variables(t *testing.T) {
 				},
 			},
 			false, false,
-			[]packersdk.Build{},
+			[]*packer.CoreBuild{
+				&packer.CoreBuild{
+					Type:           "null.test",
+					BuilderType:    "null",
+					Builder:        &null.Builder{},
+					Provisioners:   []packer.CoreBuildProvisioner{},
+					PostProcessors: [][]packer.CoreBuildPostProcessor{},
+					Prepared:       true,
+					SensitiveVars:  []string{},
+				},
+			},
 			false,
+			nil,
 		},
 		{"recursive locals",
 			defaultParser,
@@ -332,11 +407,12 @@ func TestParse_variables(t *testing.T) {
 			&PackerConfig{
 				CorePackerVersionString: lockedVersion,
 				Basedir:                 filepath.Join("testdata", "variables"),
-				LocalVariables:          Variables{},
+				LocalVariables:          nil,
 			},
 			true, true,
-			[]packersdk.Build{},
+			[]*packer.CoreBuild{},
 			false,
+			nil,
 		},
 
 		{"set variable from var-file",
@@ -345,6 +421,27 @@ func TestParse_variables(t *testing.T) {
 			&PackerConfig{
 				CorePackerVersionString: lockedVersion,
 				Basedir:                 filepath.Join("testdata", "variables"),
+				Builds: Builds{
+					&BuildBlock{
+						Sources: []SourceUseBlock{
+							{
+								SourceRef: SourceRef{
+									Type: "null",
+									Name: "test",
+								},
+							},
+						},
+					},
+				},
+				Sources: map[SourceRef]SourceBlock{
+					{
+						Type: "null",
+						Name: "test",
+					}: {
+						Type: "null",
+						Name: "test",
+					},
+				},
 				InputVariables: Variables{
 					"foo": &Variable{
 						Name: "foo",
@@ -357,8 +454,19 @@ func TestParse_variables(t *testing.T) {
 				},
 			},
 			false, false,
-			[]packersdk.Build{},
+			[]*packer.CoreBuild{
+				&packer.CoreBuild{
+					Type:           "null.test",
+					BuilderType:    "null",
+					Builder:        &null.Builder{},
+					Provisioners:   []packer.CoreBuildProvisioner{},
+					PostProcessors: [][]packer.CoreBuildPostProcessor{},
+					Prepared:       true,
+					SensitiveVars:  []string{},
+				},
+			},
 			false,
+			nil,
 		},
 
 		{"unknown variable from var-file",
@@ -366,11 +474,43 @@ func TestParse_variables(t *testing.T) {
 			parseTestArgs{"testdata/variables/empty.pkr.hcl", nil, []string{"testdata/variables/set-foo-too-wee.hcl"}},
 			&PackerConfig{
 				CorePackerVersionString: lockedVersion,
-				Basedir:                 filepath.Join("testdata", "variables"),
+				Builds: Builds{
+					&BuildBlock{
+						Sources: []SourceUseBlock{
+							{
+								SourceRef: SourceRef{
+									Type: "null",
+									Name: "test",
+								},
+							},
+						},
+					},
+				},
+				Sources: map[SourceRef]SourceBlock{
+					{
+						Type: "null",
+						Name: "test",
+					}: {
+						Type: "null",
+						Name: "test",
+					},
+				},
+				Basedir: filepath.Join("testdata", "variables"),
 			},
-			true, false,
-			[]packersdk.Build{},
+			false, false,
+			[]*packer.CoreBuild{
+				&packer.CoreBuild{
+					Type:           "null.test",
+					BuilderType:    "null",
+					Builder:        &null.Builder{},
+					Provisioners:   []packer.CoreBuildProvisioner{},
+					PostProcessors: [][]packer.CoreBuildPostProcessor{},
+					Prepared:       true,
+					SensitiveVars:  []string{},
+				},
+			},
 			false,
+			nil,
 		},
 
 		{"provisioner variable decoding",
@@ -418,48 +558,52 @@ func TestParse_variables(t *testing.T) {
 				},
 			},
 			false, false,
-			[]packersdk.Build{&packer.CoreBuild{
-				Type:     "null.null-builder",
-				Prepared: true,
-				Builder:  &null.Builder{},
-				Provisioners: []packer.CoreBuildProvisioner{
-					{
-						PType: "shell",
-						Provisioner: &packer.RetriedProvisioner{
-							MaxRetries: 1,
-							Provisioner: &HCL2Provisioner{
-								Provisioner: &MockProvisioner{
-									Config: MockConfig{
-										NestedMockConfig: NestedMockConfig{
-											Tags: []MockTag{},
+			[]*packer.CoreBuild{
+				&packer.CoreBuild{
+					Type:        "null.null-builder",
+					BuilderType: "null",
+					Prepared:    true,
+					Builder:     &null.Builder{},
+					Provisioners: []packer.CoreBuildProvisioner{
+						{
+							PType: "shell",
+							Provisioner: &packer.RetriedProvisioner{
+								MaxRetries: 1,
+								Provisioner: &HCL2Provisioner{
+									Provisioner: &MockProvisioner{
+										Config: MockConfig{
+											NestedMockConfig: NestedMockConfig{
+												Tags: []MockTag{},
+											},
+											NestedSlice: []NestedMockConfig{},
 										},
-										NestedSlice: []NestedMockConfig{},
+									},
+								},
+							},
+						},
+						{
+							PType: "shell",
+							Provisioner: &packer.RetriedProvisioner{
+								MaxRetries: 1,
+								Provisioner: &HCL2Provisioner{
+									Provisioner: &MockProvisioner{
+										Config: MockConfig{
+											NestedMockConfig: NestedMockConfig{
+												Tags: []MockTag{},
+											},
+											NestedSlice: []NestedMockConfig{},
+										},
 									},
 								},
 							},
 						},
 					},
-					{
-						PType: "shell",
-						Provisioner: &packer.RetriedProvisioner{
-							MaxRetries: 1,
-							Provisioner: &HCL2Provisioner{
-								Provisioner: &MockProvisioner{
-									Config: MockConfig{
-										NestedMockConfig: NestedMockConfig{
-											Tags: []MockTag{},
-										},
-										NestedSlice: []NestedMockConfig{},
-									},
-								},
-							},
-						},
-					},
+					PostProcessors: [][]packer.CoreBuildPostProcessor{},
+					SensitiveVars:  []string{},
 				},
-				PostProcessors: [][]packer.CoreBuildPostProcessor{},
-			},
 			},
 			false,
+			nil,
 		},
 
 		{"valid validation block",
@@ -468,6 +612,27 @@ func TestParse_variables(t *testing.T) {
 			&PackerConfig{
 				CorePackerVersionString: lockedVersion,
 				Basedir:                 filepath.Join("testdata", "variables", "validation"),
+				Builds: Builds{
+					&BuildBlock{
+						Sources: []SourceUseBlock{
+							{
+								SourceRef: SourceRef{
+									Type: "null",
+									Name: "test",
+								},
+							},
+						},
+					},
+				},
+				Sources: map[SourceRef]SourceBlock{
+					{
+						Type: "null",
+						Name: "test",
+					}: {
+						Type: "null",
+						Name: "test",
+					},
+				},
 				InputVariables: Variables{
 					"image_id": &Variable{
 						Values: []VariableAssignment{
@@ -484,8 +649,19 @@ func TestParse_variables(t *testing.T) {
 				},
 			},
 			false, false,
-			[]packersdk.Build{},
+			[]*packer.CoreBuild{
+				&packer.CoreBuild{
+					Type:           "null.test",
+					BuilderType:    "null",
+					Builder:        &null.Builder{},
+					Provisioners:   []packer.CoreBuildProvisioner{},
+					PostProcessors: [][]packer.CoreBuildPostProcessor{},
+					Prepared:       true,
+					SensitiveVars:  []string{},
+				},
+			},
 			false,
+			nil,
 		},
 
 		{"valid validation block - invalid default",
@@ -510,9 +686,44 @@ func TestParse_variables(t *testing.T) {
 			true, true,
 			nil,
 			false,
+			nil,
 		},
 	}
 	testParse(t, tests)
+}
+
+// TestParse_variables_optional_attributes ensures that the optional() attribute
+// modifier is accepted within an object type constraint and that declared
+// defaults are applied to attributes omitted from the value.
+func TestParse_variables_optional_attributes(t *testing.T) {
+	parser := getBasicParser()
+
+	cfg, diags := parser.Parse(
+		filepath.Join("testdata", "variables", "optional_attributes.pkr.hcl"),
+		nil, nil,
+	)
+	if diags.HasErrors() {
+		t.Fatalf("unexpected error diagnostics parsing optional attributes: %s", diags)
+	}
+
+	v, ok := cfg.InputVariables["context"]
+	if !ok {
+		t.Fatal("expected 'context' input variable to be present")
+	}
+
+	if v.TypeDefaults == nil {
+		t.Fatal("expected TypeDefaults to be populated for a type using optional()")
+	}
+
+	got := v.Value()
+	want := cty.ObjectVal(map[string]cty.Value{
+		"with_default":    cty.StringVal("default_value"),
+		"without_default": cty.NullVal(cty.Number),
+		"required":        cty.StringVal("set"),
+	})
+	if !got.RawEquals(want) {
+		t.Fatalf("unexpected value for context variable.\n got: %#v\nwant: %#v", got, want)
+	}
 }
 
 func TestVariables_collectVariableValues(t *testing.T) {
@@ -705,7 +916,7 @@ func TestVariables_collectVariableValues(t *testing.T) {
 			},
 
 			// output
-			wantDiags:         true,
+			wantDiags:         false,
 			wantDiagsHasError: false,
 			wantVariables:     Variables{},
 			wantValues:        map[string]cty.Value{},
@@ -714,7 +925,7 @@ func TestVariables_collectVariableValues(t *testing.T) {
 		{name: "undefined but set value - pkrvar file - strict mode",
 			variables: Variables{},
 			validationOptions: ValidationOptions{
-				Strict: true,
+				WarnOnUndeclaredVar: true,
 			},
 			args: args{
 				hclFiles: []string{`undefined_string="value"`},
@@ -722,7 +933,7 @@ func TestVariables_collectVariableValues(t *testing.T) {
 
 			// output
 			wantDiags:         true,
-			wantDiagsHasError: true,
+			wantDiagsHasError: false,
 			wantVariables:     Variables{},
 			wantValues:        map[string]cty.Value{},
 		},

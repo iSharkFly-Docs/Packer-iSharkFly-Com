@@ -1,3 +1,6 @@
+// Copyright IBM Corp. 2024, 2026
+// SPDX-License-Identifier: BUSL-1.1
+
 // STOLEN SHAMELESSLY FROM THE TERRAFORM REPO BECAUSE VENDORING OUT
 // WRAPPEDREADLINE AND WRAPPEDSTREAMS FELT LIKE TOO MUCH WORK.
 //
@@ -11,7 +14,7 @@
 // passed by panicwrap to fix that.
 //
 // panicwrap should be checked for with panicwrap.Wrapped before using this
-// librar, since this library won't adapt if the binary is not wrapped.
+// library, since this library won't adapt if the binary is not wrapped.
 package wrappedreadline
 
 import (

@@ -1,9 +1,12 @@
+// Copyright IBM Corp. 2024, 2026
+// SPDX-License-Identifier: BUSL-1.1
+
 package acctest
 
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"os"
 	"strings"
@@ -133,6 +136,9 @@ func Test(t TestT, c TestCase) {
 		Components: packer.ComponentFinder{
 			PluginConfig: &packer.PluginConfig{
 				Builders: TestBuilderSet{
+					BuilderSet: packersdk.MapOfBuilder{
+						"test": func() (packersdk.Builder, error) { return c.Builder, nil },
+					},
 					StartFn: func(n string) (packersdk.Builder, error) {
 						if n == "test" {
 							return c.Builder, nil
@@ -146,8 +152,8 @@ func Test(t TestT, c TestCase) {
 		},
 		Template: tpl,
 	})
-	err = core.Initialize()
-	if err != nil {
+	diags := core.Initialize(packer.InitializeOptions{})
+	if diags.HasErrors() {
 		t.Fatal(fmt.Sprintf("Failed to init core: %s", err))
 		return
 	}
@@ -179,8 +185,8 @@ func Test(t TestT, c TestCase) {
 	log.Printf("[DEBUG] Running 'test' build")
 	ui := &packersdk.BasicUi{
 		Reader:      os.Stdin,
-		Writer:      ioutil.Discard,
-		ErrorWriter: ioutil.Discard,
+		Writer:      io.Discard,
+		ErrorWriter: io.Discard,
 		PB:          &packersdk.NoopProgressTracker{},
 	}
 	artifacts, err := build.Run(context.Background(), ui)

@@ -1,3 +1,6 @@
+// Copyright IBM Corp. 2024, 2026
+// SPDX-License-Identifier: BUSL-1.1
+
 package packer
 
 import (
@@ -44,12 +47,21 @@ func (u *ColoredUi) Ask(query string) (string, error) {
 	return u.Ui.Ask(u.colorize(query, u.Color, true))
 }
 
-func (u *ColoredUi) Say(message string) {
-	u.Ui.Say(u.colorize(message, u.Color, true))
+func (u *ColoredUi) Askf(query string, vals ...any) (string, error) {
+	return u.Ask(fmt.Sprintf(query, vals...))
 }
 
+func (u *ColoredUi) Say(message string) {
+	u.Ui.Say(u.colorize(scrubSecrets(message), u.Color, true))
+}
+
+func (u *ColoredUi) Sayf(message string, vals ...any) {
+	u.Say(fmt.Sprintf(message, vals...))
+}
+
+// Deprecated: Use `Say` instead.
 func (u *ColoredUi) Message(message string) {
-	u.Ui.Message(u.colorize(message, u.Color, false))
+	u.Say(message)
 }
 
 func (u *ColoredUi) Error(message string) {
@@ -58,7 +70,11 @@ func (u *ColoredUi) Error(message string) {
 		color = UiColorRed
 	}
 
-	u.Ui.Error(u.colorize(message, color, true))
+	u.Ui.Error(u.colorize(scrubSecrets(message), color, true))
+}
+
+func (u *ColoredUi) Errorf(message string, vals ...any) {
+	u.Error(fmt.Sprintf(message, vals...))
 }
 
 func (u *ColoredUi) Machine(t string, args ...string) {
@@ -118,16 +134,29 @@ func (u *TargetedUI) Ask(query string) (string, error) {
 	return u.Ui.Ask(u.prefixLines(true, query))
 }
 
-func (u *TargetedUI) Say(message string) {
-	u.Ui.Say(u.prefixLines(true, message))
+func (u *TargetedUI) Askf(query string, args ...any) (string, error) {
+	return u.Ask(fmt.Sprintf(query, args...))
 }
 
+func (u *TargetedUI) Say(message string) {
+	u.Ui.Say(u.prefixLines(true, scrubSecrets(message)))
+}
+
+func (u *TargetedUI) Sayf(message string, args ...any) {
+	u.Say(fmt.Sprintf(message, args...))
+}
+
+// Deprecated: Use `Say` instead.
 func (u *TargetedUI) Message(message string) {
-	u.Ui.Message(u.prefixLines(false, message))
+	u.Say(message)
 }
 
 func (u *TargetedUI) Error(message string) {
-	u.Ui.Error(u.prefixLines(true, message))
+	u.Ui.Error(u.prefixLines(true, scrubSecrets(message)))
+}
+
+func (u *TargetedUI) Errorf(message string, args ...any) {
+	u.Error(fmt.Sprintf(message, args...))
 }
 
 func (u *TargetedUI) Machine(t string, args ...string) {
@@ -167,16 +196,29 @@ func (u *MachineReadableUi) Ask(query string) (string, error) {
 	return "", errors.New("machine-readable UI can't ask")
 }
 
+func (u *MachineReadableUi) Askf(query string, args ...any) (string, error) {
+	return u.Ask(fmt.Sprintf(query, args...))
+}
+
 func (u *MachineReadableUi) Say(message string) {
 	u.Machine("ui", "say", message)
 }
 
+func (u *MachineReadableUi) Sayf(message string, args ...any) {
+	u.Say(fmt.Sprintf(message, args...))
+}
+
+// Deprecated: Use `Say` instead.
 func (u *MachineReadableUi) Message(message string) {
 	u.Machine("ui", "message", message)
 }
 
 func (u *MachineReadableUi) Error(message string) {
 	u.Machine("ui", "error", message)
+}
+
+func (u *MachineReadableUi) Errorf(message string, args ...any) {
+	u.Error(fmt.Sprintf(message, args...))
 }
 
 func (u *MachineReadableUi) Machine(category string, args ...string) {
@@ -193,10 +235,10 @@ func (u *MachineReadableUi) Machine(category string, args ...string) {
 	// Prepare the args
 	for i, v := range args {
 		// Use packersdk.LogSecretFilter to scrub out sensitive variables
-		args[i] = packersdk.LogSecretFilter.FilterString(args[i])
-		args[i] = strings.Replace(v, ",", "%!(PACKER_COMMA)", -1)
-		args[i] = strings.Replace(args[i], "\r", "\\r", -1)
-		args[i] = strings.Replace(args[i], "\n", "\\n", -1)
+		args[i] = scrubSecrets(v)
+		args[i] = strings.ReplaceAll(args[i], ",", "%!(PACKER_COMMA)")
+		args[i] = strings.ReplaceAll(args[i], "\r", "\\r")
+		args[i] = strings.ReplaceAll(args[i], "\n", "\\n")
 	}
 	argsString := strings.Join(args, ",")
 
@@ -229,16 +271,29 @@ func (u *TimestampedUi) Ask(query string) (string, error) {
 	return u.Ui.Ask(query)
 }
 
-func (u *TimestampedUi) Say(message string) {
-	u.Ui.Say(u.timestampLine(message))
+func (u *TimestampedUi) Askf(query string, args ...any) (string, error) {
+	return u.Ask(fmt.Sprintf(query, args...))
 }
 
+func (u *TimestampedUi) Say(message string) {
+	u.Ui.Say(u.timestampLine(scrubSecrets(message)))
+}
+
+func (u *TimestampedUi) Sayf(message string, args ...any) {
+	u.Say(fmt.Sprintf(message, args...))
+}
+
+// Deprecated: Use `Say` instead.
 func (u *TimestampedUi) Message(message string) {
-	u.Ui.Message(u.timestampLine(message))
+	u.Say(message)
 }
 
 func (u *TimestampedUi) Error(message string) {
-	u.Ui.Error(u.timestampLine(message))
+	u.Ui.Error(u.timestampLine(scrubSecrets(message)))
+}
+
+func (u *TimestampedUi) Errorf(message string, args ...any) {
+	u.Error(fmt.Sprintf(message, args...))
 }
 
 func (u *TimestampedUi) Machine(message string, args ...string) {
@@ -251,4 +306,8 @@ func (u *TimestampedUi) TrackProgress(src string, currentSize, totalSize int64, 
 
 func (u *TimestampedUi) timestampLine(string string) string {
 	return fmt.Sprintf("%v: %v", time.Now().Format(time.RFC3339), string)
+}
+
+func scrubSecrets(message string) string {
+	return packersdk.LogSecretFilter.FilterString(message)
 }

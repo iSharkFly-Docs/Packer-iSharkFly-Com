@@ -1,11 +1,15 @@
+// Copyright IBM Corp. 2024, 2026
+// SPDX-License-Identifier: BUSL-1.1
+
 package hcl2template
 
 import (
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/hashicorp/go-version"
-	packersdk "github.com/hashicorp/packer-plugin-sdk/packer"
+	"github.com/hashicorp/packer-plugin-sdk/template/config"
 	"github.com/hashicorp/packer/hcl2template/addrs"
 	. "github.com/hashicorp/packer/hcl2template/internal"
 	hcl2template "github.com/hashicorp/packer/hcl2template/internal"
@@ -16,7 +20,7 @@ import (
 var (
 	refVBIsoUbuntu1204  = SourceRef{Type: "virtualbox-iso", Name: "ubuntu-1204"}
 	refAWSEBSUbuntu1604 = SourceRef{Type: "amazon-ebs", Name: "ubuntu-1604"}
-	refAWSV3MyImage     = SourceRef{Type: "amazon-v3-ebs", Name: "my-image"}
+	refNull             = SourceRef{Type: "null", Name: "test"}
 	pTrue               = pointerToBool(true)
 )
 
@@ -132,9 +136,9 @@ func TestParser_complete(t *testing.T) {
 				},
 				Datasources: Datasources{
 					DatasourceRef{Type: "amazon-ami", Name: "test"}: DatasourceBlock{
-						Type:  "amazon-ami",
-						Name:  "test",
-						value: cty.StringVal("foo"),
+						Type:   "amazon-ami",
+						DSName: "test",
+						value:  cty.StringVal("foo"),
 					},
 				},
 				Sources: map[SourceRef]SourceBlock{
@@ -200,11 +204,45 @@ func TestParser_complete(t *testing.T) {
 				},
 			},
 			false, false,
-			[]packersdk.Build{
+			[]*packer.CoreBuild{
 				&packer.CoreBuild{
-					Type:     "virtualbox-iso.ubuntu-1204",
-					Prepared: true,
-					Builder:  basicMockBuilder,
+					Type:          "virtualbox-iso.ubuntu-1204",
+					BuilderType:   "virtualbox-iso",
+					Prepared:      true,
+					SensitiveVars: []string{},
+					Builder: &MockBuilder{
+						Config: MockConfig{
+							NestedMockConfig: NestedMockConfig{
+								// interpolates source and type in builder
+								String:   "ubuntu-1204-virtualbox-iso",
+								Int:      42,
+								Int64:    43,
+								Bool:     true,
+								Trilean:  config.TriTrue,
+								Duration: 10 * time.Second,
+								MapStringString: map[string]string{
+									"a": "b",
+									"c": "d",
+								},
+								SliceString: []string{
+									"a",
+									"b",
+									"c",
+								},
+								SliceSliceString: [][]string{
+									{"a", "b"},
+									{"c", "d"},
+								},
+								Tags:       []MockTag{},
+								Datasource: "string",
+							},
+							Nested: builderBasicNestedMockConfig,
+							NestedSlice: []NestedMockConfig{
+								builderBasicNestedMockConfig,
+								builderBasicNestedMockConfig,
+							},
+						},
+					},
 					Provisioners: []packer.CoreBuildProvisioner{
 						{
 							PType: "shell",
@@ -281,8 +319,10 @@ func TestParser_complete(t *testing.T) {
 					},
 				},
 				&packer.CoreBuild{
-					Type:     "amazon-ebs.ubuntu-1604",
-					Prepared: true,
+					Type:          "amazon-ebs.ubuntu-1604",
+					BuilderType:   "amazon-ebs",
+					Prepared:      true,
+					SensitiveVars: []string{},
 					Builder: &MockBuilder{
 						Config: MockConfig{
 							NestedMockConfig: NestedMockConfig{
@@ -383,6 +423,7 @@ func TestParser_complete(t *testing.T) {
 				},
 			},
 			false,
+			nil,
 		},
 	}
 	testParse(t, tests)
@@ -434,9 +475,7 @@ func TestParser_no_init(t *testing.T) {
 									Name:   "amazon",
 									Source: "github.com/hashicorp/amazon",
 									Type: &addrs.Plugin{
-										Type:      "amazon",
-										Namespace: "hashicorp",
-										Hostname:  "github.com",
+										Source: "github.com/hashicorp/amazon",
 									},
 									Requirement: VersionConstraint{
 										Required: mustVersionConstraints(version.NewConstraint(">= v0")),
@@ -446,9 +485,7 @@ func TestParser_no_init(t *testing.T) {
 									Name:   "amazon-v1",
 									Source: "github.com/hashicorp/amazon",
 									Type: &addrs.Plugin{
-										Type:      "amazon",
-										Namespace: "hashicorp",
-										Hostname:  "github.com",
+										Source: "github.com/hashicorp/amazon",
 									},
 									Requirement: VersionConstraint{
 										Required: mustVersionConstraints(version.NewConstraint(">= v1")),
@@ -458,9 +495,7 @@ func TestParser_no_init(t *testing.T) {
 									Name:   "amazon-v2",
 									Source: "github.com/hashicorp/amazon",
 									Type: &addrs.Plugin{
-										Type:      "amazon",
-										Namespace: "hashicorp",
-										Hostname:  "github.com",
+										Source: "github.com/hashicorp/amazon",
 									},
 									Requirement: VersionConstraint{
 										Required: mustVersionConstraints(version.NewConstraint(">= v2")),
@@ -470,9 +505,7 @@ func TestParser_no_init(t *testing.T) {
 									Name:   "amazon-v3",
 									Source: "github.com/hashicorp/amazon",
 									Type: &addrs.Plugin{
-										Type:      "amazon",
-										Namespace: "hashicorp",
-										Hostname:  "github.com",
+										Source: "github.com/hashicorp/amazon",
 									},
 									Requirement: VersionConstraint{
 										Required: mustVersionConstraints(version.NewConstraint(">= v3")),
@@ -482,9 +515,7 @@ func TestParser_no_init(t *testing.T) {
 									Name:   "amazon-v3-azr",
 									Source: "github.com/azr/amazon",
 									Type: &addrs.Plugin{
-										Type:      "amazon",
-										Namespace: "azr",
-										Hostname:  "github.com",
+										Source: "github.com/azr/amazon",
 									},
 									Requirement: VersionConstraint{
 										Required: mustVersionConstraints(version.NewConstraint(">= v3")),
@@ -494,9 +525,7 @@ func TestParser_no_init(t *testing.T) {
 									Name:   "amazon-v4",
 									Source: "github.com/hashicorp/amazon",
 									Type: &addrs.Plugin{
-										Type:      "amazon",
-										Namespace: "hashicorp",
-										Hostname:  "github.com",
+										Source: "github.com/hashicorp/amazon",
 									},
 									Requirement: VersionConstraint{
 										Required: mustVersionConstraints(version.NewConstraint(">= v4")),
@@ -542,8 +571,9 @@ func TestParser_no_init(t *testing.T) {
 				Builds:  nil,
 			},
 			false, false,
-			[]packersdk.Build{},
+			[]*packer.CoreBuild{},
 			false,
+			nil,
 		},
 
 		{"duplicate required plugin accessor fails",
@@ -551,8 +581,9 @@ func TestParser_no_init(t *testing.T) {
 			parseTestArgs{"testdata/init/duplicate_required_plugins", nil, nil},
 			nil,
 			true, true,
-			[]packersdk.Build{},
+			[]*packer.CoreBuild{},
 			false,
+			nil,
 		},
 		{"invalid_inexplicit_source.pkr.hcl",
 			defaultParser,
@@ -571,8 +602,9 @@ func TestParser_no_init(t *testing.T) {
 				Basedir:                 filepath.Clean("testdata/init"),
 			},
 			true, true,
-			[]packersdk.Build{},
+			[]*packer.CoreBuild{},
 			false,
+			nil,
 		},
 		{"invalid_short_source.pkr.hcl",
 			defaultParser,
@@ -591,8 +623,9 @@ func TestParser_no_init(t *testing.T) {
 				Basedir:                 filepath.Clean("testdata/init"),
 			},
 			true, true,
-			[]packersdk.Build{},
+			[]*packer.CoreBuild{},
 			false,
+			nil,
 		},
 		{"invalid_inexplicit_source_2.pkr.hcl",
 			defaultParser,
@@ -611,8 +644,9 @@ func TestParser_no_init(t *testing.T) {
 				Basedir:                 filepath.Clean("testdata/init"),
 			},
 			true, true,
-			[]packersdk.Build{},
+			[]*packer.CoreBuild{},
 			false,
+			nil,
 		},
 	}
 	testParse_only_Parse(t, tests)

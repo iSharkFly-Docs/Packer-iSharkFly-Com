@@ -1,3 +1,6 @@
+// Copyright IBM Corp. 2024, 2026
+// SPDX-License-Identifier: BUSL-1.1
+
 package command
 
 import (
@@ -8,7 +11,6 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/hashicorp/packer-plugin-amazon/builder/ebs"
 	packersdk "github.com/hashicorp/packer-plugin-sdk/packer"
 	"github.com/hashicorp/packer/builder/file"
 	"github.com/hashicorp/packer/builder/null"
@@ -27,10 +29,6 @@ func HasExec() bool {
 	switch runtime.GOOS {
 	case "js":
 		return false
-	case "darwin":
-		if runtime.GOARCH == "arm64" {
-			return false
-		}
 	}
 	return true
 }
@@ -122,9 +120,8 @@ func getBareComponentFinder() packer.ComponentFinder {
 	return packer.ComponentFinder{
 		PluginConfig: &packer.PluginConfig{
 			Builders: packer.MapOfBuilder{
-				"file":       func() (packersdk.Builder, error) { return &file.Builder{}, nil },
-				"null":       func() (packersdk.Builder, error) { return &null.Builder{}, nil },
-				"amazon-ebs": func() (packersdk.Builder, error) { return &ebs.Builder{}, nil },
+				"file": func() (packersdk.Builder, error) { return &file.Builder{}, nil },
+				"null": func() (packersdk.Builder, error) { return &null.Builder{}, nil },
 			},
 			Provisioners: packer.MapOfProvisioner{
 				"shell-local": func() (packersdk.Provisioner, error) { return &shell_local.Provisioner{}, nil },

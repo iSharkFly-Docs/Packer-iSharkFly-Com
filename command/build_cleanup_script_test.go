@@ -1,3 +1,6 @@
+// Copyright IBM Corp. 2024, 2026
+// SPDX-License-Identifier: BUSL-1.1
+
 package command
 
 import (
@@ -7,7 +10,7 @@ import (
 
 func TestBuildWithCleanupScript(t *testing.T) {
 	c := &BuildCommand{
-		Meta: testMetaFile(t),
+		Meta: TestMetaFile(t),
 	}
 
 	args := []string{

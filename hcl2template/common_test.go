@@ -1,3 +1,6 @@
+// Copyright IBM Corp. 2024, 2026
+// SPDX-License-Identifier: BUSL-1.1
+
 package hcl2template
 
 import (
@@ -6,14 +9,15 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclparse"
 	packersdk "github.com/hashicorp/packer-plugin-sdk/packer"
 	"github.com/hashicorp/packer-plugin-sdk/template/config"
 	"github.com/hashicorp/packer/builder/null"
+	dnull "github.com/hashicorp/packer/datasource/null"
 	. "github.com/hashicorp/packer/hcl2template/internal"
+	hcl2template "github.com/hashicorp/packer/hcl2template/internal"
 	"github.com/hashicorp/packer/packer"
 	"github.com/zclconf/go-cty/cty"
 )
@@ -41,6 +45,7 @@ func getBasicParser(opts ...getParserOption) *Parser {
 			},
 			DataSources: packer.MapOfDatasource{
 				"amazon-ami": func() (packersdk.Datasource, error) { return &MockDatasource{}, nil },
+				"null":       func() (packersdk.Datasource, error) { return &dnull.Datasource{}, nil },
 			},
 		},
 	}
@@ -67,9 +72,17 @@ type parseTest struct {
 	parseWantDiags         bool
 	parseWantDiagHasErrors bool
 
-	getBuildsWantBuilds []packersdk.Build
+	getBuildsWantBuilds []*packer.CoreBuild
 	getBuildsWantDiags  bool
 	// getBuildsWantDiagHasErrors bool
+
+	getHCPPackerRegistry *getHCPPackerRegistry
+}
+
+type getHCPPackerRegistry struct {
+	wantBlock        *HCPPackerRegistryBlock
+	wantDiag         bool
+	wantDiagHasError bool
 }
 
 func testParse(t *testing.T, tests []parseTest) {
@@ -110,6 +123,31 @@ func testParse(t *testing.T, tests []parseTest) {
 			}
 			if diff := cmp.Diff(tt.getBuildsWantBuilds, gotBuilds, cmpOpts...); diff != "" {
 				t.Fatalf("Parser.getBuilds() wrong packer builds. %s", diff)
+			}
+
+			gotGetHCPPackerRegistry, gotDiags := gotCfg.GetHCPPackerRegistryBlock()
+			if tt.getHCPPackerRegistry != nil {
+				if tt.getHCPPackerRegistry.wantDiag && len(gotDiags) == 0 {
+					t.Fatal("Parser.getHCPPackerRegistry() expected diagostics, got 0")
+				}
+				if !tt.getHCPPackerRegistry.wantDiag && len(gotDiags) != 0 {
+					t.Fatalf("Parser.getHCPPackerRegistry() does not  expect diagostics, got %v", gotDiags)
+				}
+				if tt.getHCPPackerRegistry.wantDiagHasError && !gotDiags.HasErrors() {
+					t.Fatalf("Parser.getHCPPackerRegistry() expected error diagostics, got %v", gotDiags)
+				}
+				if !tt.getHCPPackerRegistry.wantDiagHasError && gotDiags.HasErrors() {
+					t.Fatalf("Parser.getHCPPackerRegistry() did not expect error diagostics, got %v", gotDiags)
+				}
+				if diff := cmp.Diff(tt.getHCPPackerRegistry.wantBlock, gotGetHCPPackerRegistry, cmpOpts...); diff != "" {
+					t.Fatalf("Parser.parse() wrong HCPPackerRegistry block. %s", diff)
+				}
+
+			}
+			if tt.getHCPPackerRegistry == nil {
+				if gotGetHCPPackerRegistry != nil {
+					t.Fatalf("Parser.getHCPPackerRegistry() expected nil, got %v", gotGetHCPPackerRegistry)
+				}
 			}
 		})
 	}
@@ -200,17 +238,6 @@ var (
 		Datasource: "string",
 	}
 
-	basicMockBuilder = &MockBuilder{
-		Config: MockConfig{
-			NestedMockConfig: builderBasicNestedMockConfig,
-			Nested:           builderBasicNestedMockConfig,
-			NestedSlice: []NestedMockConfig{
-				builderBasicNestedMockConfig,
-				builderBasicNestedMockConfig,
-			},
-		},
-	}
-
 	basicMockProvisioner = &MockProvisioner{
 		Config: MockConfig{
 			NotSquashed:      "value <UNKNOWN>",
@@ -268,17 +295,6 @@ var (
 			NestedSlice: []NestedMockConfig{},
 		},
 	}
-	basicMockCommunicator = &MockCommunicator{
-		Config: MockConfig{
-			NestedMockConfig: basicNestedMockConfig,
-			Nested:           basicNestedMockConfig,
-			NestedSlice: []NestedMockConfig{
-				{
-					Tags: []MockTag{},
-				},
-			},
-		},
-	}
 
 	emptyMockBuilder = &MockBuilder{
 		Config: MockConfig{
@@ -287,13 +303,6 @@ var (
 			},
 			Nested:      NestedMockConfig{},
 			NestedSlice: []NestedMockConfig{},
-		},
-	}
-
-	emptyMockProvisioner = &MockProvisioner{
-		Config: MockConfig{
-			NestedMockConfig: NestedMockConfig{Tags: []MockTag{}},
-			NestedSlice:      []NestedMockConfig{},
 		},
 	}
 
@@ -356,11 +365,22 @@ var cmpOpts = []cmp.Option{
 		null.Builder{},
 	),
 	cmpopts.IgnoreFields(PackerConfig{},
-		"Cwd", // Cwd will change for every os type
+		"Cwd",     // Cwd will change for every os type
+		"HCPVars", // HCPVars will not be filled-in during parsing
 	),
 	cmpopts.IgnoreFields(VariableAssignment{},
 		"Expr", // its an interface
 	),
+	cmpopts.IgnoreFields(packer.CoreBuild{},
+		"HCLConfig",
+	),
+	cmpopts.IgnoreFields(packer.CoreBuildProvisioner{},
+		"HCLConfig",
+	),
+	cmpopts.IgnoreFields(packer.CoreBuildPostProcessor{},
+		"HCLConfig",
+	),
+	cmpopts.IgnoreTypes(hcl2template.MockBuilder{}),
 	cmpopts.IgnoreTypes(HCL2Ref{}),
 	cmpopts.IgnoreTypes([]*LocalBlock{}),
 	cmpopts.IgnoreTypes([]hcl.Range{}),

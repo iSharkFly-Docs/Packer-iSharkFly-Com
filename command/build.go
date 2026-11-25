@@ -1,8 +1,12 @@
+// Copyright IBM Corp. 2024, 2026
+// SPDX-License-Identifier: BUSL-1.1
+
 package command
 
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"math"
@@ -12,16 +16,17 @@ import (
 	"time"
 
 	"github.com/hashicorp/hcl/v2"
-	"github.com/hashicorp/hcl/v2/hclparse"
 	packersdk "github.com/hashicorp/packer-plugin-sdk/packer"
-	"github.com/hashicorp/packer-plugin-sdk/template"
-	"github.com/hashicorp/packer/hcl2template"
+	"github.com/hashicorp/packer/internal/hcp/registry"
 	"github.com/hashicorp/packer/packer"
-	"github.com/hashicorp/packer/version"
 	"golang.org/x/sync/semaphore"
 
 	"github.com/hako/durafmt"
 	"github.com/posener/complete"
+)
+
+const (
+	hcpReadyIntegrationURL = "https://developer.hashicorp.com/packer/integrations?flags=hcp-ready"
 )
 
 type BuildCommand struct {
@@ -42,7 +47,7 @@ func (c *BuildCommand) Run(args []string) int {
 
 func (c *BuildCommand) ParseArgs(args []string) (*BuildArgs, int) {
 	var cfg BuildArgs
-	flags := c.Meta.FlagSet("build", FlagSetBuildFilter|FlagSetVars)
+	flags := c.Meta.FlagSet("build")
 	flags.Usage = func() { c.Ui.Say(c.Help()) }
 	cfg.AddFlagSets(flags)
 	if err := flags.Parse(args); err != nil {
@@ -60,17 +65,6 @@ func (c *BuildCommand) ParseArgs(args []string) (*BuildArgs, int) {
 	}
 	cfg.Path = args[0]
 	return &cfg, 0
-}
-
-func (m *Meta) GetConfigFromHCL(cla *MetaArgs) (*hcl2template.PackerConfig, int) {
-	parser := &hcl2template.Parser{
-		CorePackerVersion:       version.SemVer,
-		CorePackerVersionString: version.FormattedVersion(),
-		Parser:                  hclparse.NewParser(),
-		PluginConfig:            m.CoreConfig.Components.PluginConfig,
-	}
-	cfg, diags := parser.Parse(cla.Path, cla.VarFiles, cla.Vars)
-	return cfg, writeDiags(m.Ui, parser.Files(), diags)
 }
 
 func writeDiags(ui packersdk.Ui, files map[string]*hcl.File, diags hcl.Diagnostics) int {
@@ -91,68 +85,54 @@ func writeDiags(ui packersdk.Ui, files map[string]*hcl.File, diags hcl.Diagnosti
 	return 0
 }
 
-func (m *Meta) GetConfig(cla *MetaArgs) (packer.Handler, int) {
-	cfgType, err := cla.GetConfigType()
-	if err != nil {
-		m.Ui.Error(fmt.Sprintf("%q: %s", cla.Path, err))
-		return nil, 1
-	}
-
-	switch cfgType {
-	case ConfigTypeHCL2:
-		// TODO(azr): allow to pass a slice of files here.
-		return m.GetConfigFromHCL(cla)
-	default:
-		// TODO: uncomment once we've polished HCL a bit more.
-		// c.Ui.Say(`Legacy JSON Configuration Will Be Used.
-		// The template will be parsed in the legacy configuration style. This style
-		// will continue to work but users are encouraged to move to the new style.
-		// See: https://packer.io/guides/hcl
-		// `)
-		return m.GetConfigFromJSON(cla)
-	}
-}
-
-func (m *Meta) GetConfigFromJSON(cla *MetaArgs) (packer.Handler, int) {
-	// Parse the template
-	var tpl *template.Template
-	var err error
-	if cla.Path == "" {
-		// here cla validation passed so this means we want a default builder
-		// and we probably are in the console command
-		tpl, err = template.Parse(TiniestBuilder)
-	} else {
-		tpl, err = template.ParseFile(cla.Path)
-	}
-
-	if err != nil {
-		m.Ui.Error(fmt.Sprintf("Failed to parse file as legacy JSON template: "+
-			"if you are using an HCL template, check your file extensions; they "+
-			"should be either *.pkr.hcl or *.pkr.json; see the docs for more "+
-			"details: https://www.packer.io/docs/templates/hcl_templates. \n"+
-			"Original error: %s", err))
-		return nil, 1
-	}
-
-	// Get the core
-	core, err := m.Core(tpl, cla)
-	ret := 0
-	if err != nil {
-		m.Ui.Error(err.Error())
-		ret = 1
-	}
-	return &CoreWrapper{core}, ret
-}
-
 func (c *BuildCommand) RunContext(buildCtx context.Context, cla *BuildArgs) int {
+	// Set the release only flag if specified as argument
+	//
+	// This deactivates the capacity for Packer to load development binaries.
+	c.CoreConfig.Components.PluginConfig.ReleasesOnly = cla.ReleaseOnly
+
 	packerStarter, ret := c.GetConfig(&cla.MetaArgs)
 	if ret != 0 {
 		return ret
 	}
-	diags := packerStarter.Initialize(packer.InitializeOptions{})
+
+	diags := packerStarter.DetectPluginBinaries()
 	ret = writeDiags(c.Ui, nil, diags)
 	if ret != 0 {
 		return ret
+	}
+
+	diags = packerStarter.Initialize(packer.InitializeOptions{
+		UseSequential: cla.UseSequential,
+	})
+
+	if packer.PackerUseProto {
+		log.Printf("[TRACE] Using protobuf for communication with plugins")
+	}
+
+	ret = writeDiags(c.Ui, nil, diags)
+	if ret != 0 {
+		return ret
+	}
+
+	hcpRegistry, diags := registry.New(packerStarter, c.Ui)
+	ret = writeDiags(c.Ui, nil, diags)
+	if ret != 0 {
+		return ret
+	}
+	hcpRegistry.Metadata().Gather(GetCleanedBuildArgs(cla))
+
+	defer hcpRegistry.VersionStatusSummary()
+
+	err := hcpRegistry.PopulateVersion(buildCtx)
+	if err != nil {
+		return writeDiags(c.Ui, nil, hcl.Diagnostics{
+			&hcl.Diagnostic{
+				Summary:  "HCP: populating version failed",
+				Severity: hcl.DiagError,
+				Detail:   err.Error(),
+			},
+		})
 	}
 
 	builds, diags := packerStarter.GetBuilds(packer.GetBuildsOptions{
@@ -166,6 +146,29 @@ func (c *BuildCommand) RunContext(buildCtx context.Context, cla *BuildArgs) int 
 	// here, something could have gone wrong but we still want to run valid
 	// builds.
 	ret = writeDiags(c.Ui, nil, diags)
+	if len(builds) == 0 && ret != 0 {
+		return ret
+	}
+
+	// Fetch and inject enforced provisioners from HCP Packer (if configured)
+	if !cla.SkipEnforcement {
+		if err := hcpRegistry.FetchEnforcedBlocks(buildCtx); err != nil {
+			return writeDiags(c.Ui, nil, hcl.Diagnostics{
+				&hcl.Diagnostic{
+					Summary:  "HCP: fetching enforced provisioners failed",
+					Severity: hcl.DiagError,
+					Detail:   err.Error(),
+				},
+			})
+		}
+
+		diags := hcpRegistry.InjectEnforcedProvisioners(builds)
+		if diags.HasErrors() {
+			return writeDiags(c.Ui, nil, diags)
+		}
+	} else {
+		c.Ui.Say("Skipping HCP Packer enforced provisioners (--skip-enforcement flag set)")
+	}
 
 	if cla.Debug {
 		c.Ui.Say("Debug mode enabled. Builds will not be parallelized.")
@@ -179,7 +182,7 @@ func (c *BuildCommand) RunContext(buildCtx context.Context, cla *BuildArgs) int 
 		packer.UiColorYellow,
 		packer.UiColorBlue,
 	}
-	buildUis := make(map[packersdk.Build]packersdk.Ui)
+	buildUis := make(map[*packer.CoreBuild]packersdk.Ui)
 	for i := range builds {
 		ui := c.Ui
 		if cla.Color {
@@ -205,10 +208,21 @@ func (c *BuildCommand) RunContext(buildCtx context.Context, cla *BuildArgs) int 
 
 		buildUis[builds[i]] = ui
 	}
-
 	log.Printf("Build debug mode: %v", cla.Debug)
 	log.Printf("Force build: %v", cla.Force)
 	log.Printf("On error: %v", cla.OnError)
+
+	if len(builds) == 0 {
+		return writeDiags(c.Ui, nil, hcl.Diagnostics{
+			&hcl.Diagnostic{
+				Summary: "No builds to run",
+				Detail: "A build command cannot run without at least one build to process. " +
+					"If the only or except flags have been specified at run time check that" +
+					" at least one build is selected for execution.",
+				Severity: hcl.DiagError,
+			},
+		})
+	}
 
 	// Get the start of the build command
 	buildCommandStart := time.Now()
@@ -220,11 +234,12 @@ func (c *BuildCommand) RunContext(buildCtx context.Context, cla *BuildArgs) int 
 		m map[string][]packersdk.Artifact
 	}{m: make(map[string][]packersdk.Artifact)}
 	// Get the builds we care about
-	var errors = struct {
+	var errs = struct {
 		sync.RWMutex
 		m map[string]error
 	}{m: make(map[string]error)}
 	limitParallel := semaphore.NewWeighted(cla.ParallelBuilds)
+
 	for i := range builds {
 		if err := buildCtx.Err(); err != nil {
 			log.Println("Interrupted, not going to start any more builds.")
@@ -236,9 +251,9 @@ func (c *BuildCommand) RunContext(buildCtx context.Context, cla *BuildArgs) int 
 		ui := buildUis[b]
 		if err := limitParallel.Acquire(buildCtx, 1); err != nil {
 			ui.Error(fmt.Sprintf("Build '%s' failed to acquire semaphore: %s", name, err))
-			errors.Lock()
-			errors.m[name] = err
-			errors.Unlock()
+			errs.Lock()
+			errs.m[name] = err
+			errs.Unlock()
 			break
 		}
 		// Increment the waitgroup so we wait for this item to finish properly
@@ -253,6 +268,26 @@ func (c *BuildCommand) RunContext(buildCtx context.Context, cla *BuildArgs) int 
 
 			defer limitParallel.Release(1)
 
+			err := hcpRegistry.StartBuild(buildCtx, b)
+			// Seems odd to require this error check here. Now that it is an error we can just exit with diag
+			if err != nil {
+				// If the build is already done, we skip without a warning
+				if errors.As(err, &registry.ErrBuildAlreadyDone{}) {
+					ui.Say(fmt.Sprintf("skipping already done build %q", name))
+					return
+				}
+				writeDiags(c.Ui, nil, hcl.Diagnostics{
+					&hcl.Diagnostic{
+						Summary: fmt.Sprintf(
+							"hcp: failed to start build %q",
+							name),
+						Severity: hcl.DiagError,
+						Detail:   err.Error(),
+					},
+				})
+				return
+			}
+
 			log.Printf("Starting build run: %s", name)
 			runArtifacts, err := b.Run(buildCtx, ui)
 
@@ -261,18 +296,58 @@ func (c *BuildCommand) RunContext(buildCtx context.Context, cla *BuildArgs) int 
 			buildDuration := buildEnd.Sub(buildStart)
 			fmtBuildDuration := durafmt.Parse(buildDuration).LimitFirstN(2)
 
+			runArtifacts, hcperr := hcpRegistry.CompleteBuild(
+				buildCtx,
+				b,
+				runArtifacts,
+				err)
+			if hcperr != nil {
+				if _, ok := hcperr.(*registry.NotAHCPArtifactError); ok {
+					writeDiags(c.Ui, nil, hcl.Diagnostics{
+						&hcl.Diagnostic{
+							Severity: hcl.DiagError,
+							Summary:  fmt.Sprintf("The %q builder produced an artifact that cannot be pushed to HCP Packer", b.Name()),
+							Detail: fmt.Sprintf(
+								`%s
+Check that you are using an HCP Ready integration before trying again:
+%s`,
+								hcperr, hcpReadyIntegrationURL),
+						},
+					})
+				} else {
+					writeDiags(c.Ui, nil, hcl.Diagnostics{
+						&hcl.Diagnostic{
+							Summary: fmt.Sprintf(
+								"publishing build metadata to HCP Packer for %q failed",
+								name),
+							Severity: hcl.DiagError,
+							Detail:   hcperr.Error(),
+						},
+					})
+				}
+			}
+
 			if err != nil {
 				ui.Error(fmt.Sprintf("Build '%s' errored after %s: %s", name, fmtBuildDuration, err))
-				errors.Lock()
-				errors.m[name] = err
-				errors.Unlock()
+				errs.Lock()
+				errs.m[name] = err
+				errs.Unlock()
 			} else {
 				ui.Say(fmt.Sprintf("Build '%s' finished after %s.", name, fmtBuildDuration))
-				if nil != runArtifacts {
+				if runArtifacts != nil {
 					artifacts.Lock()
 					artifacts.m[name] = runArtifacts
 					artifacts.Unlock()
 				}
+			}
+
+			// If the build succeeded but uploading to HCP failed,
+			// Packer should exit non-zero, so we re-assign the
+			// error to account for this case.
+			if hcperr != nil && err == nil {
+				errs.Lock()
+				errs.m[name] = hcperr
+				errs.Unlock()
 			}
 		}()
 
@@ -285,7 +360,6 @@ func (c *BuildCommand) RunContext(buildCtx context.Context, cla *BuildArgs) int 
 			log.Printf("Parallelization disabled, waiting for build to finish: %s", b.Name())
 			wg.Wait()
 		}
-
 	}
 
 	// Wait for both the builds to complete and the interrupt handler,
@@ -304,11 +378,11 @@ func (c *BuildCommand) RunContext(buildCtx context.Context, cla *BuildArgs) int 
 		return 1
 	}
 
-	if len(errors.m) > 0 {
-		c.Ui.Machine("error-count", strconv.FormatInt(int64(len(errors.m)), 10))
+	if len(errs.m) > 0 {
+		c.Ui.Machine("error-count", strconv.FormatInt(int64(len(errs.m)), 10))
 
 		c.Ui.Error("\n==> Some builds didn't complete successfully and had errors:")
-		for name, err := range errors.m {
+		for name, err := range errs.m {
 			// Create a UI for the machine readable stuff to be targeted
 			ui := &packer.TargetedUI{
 				Target: name,
@@ -363,13 +437,15 @@ func (c *BuildCommand) RunContext(buildCtx context.Context, cla *BuildArgs) int 
 
 				ui.Machine("artifact", iStr, "end")
 				c.Ui.Say(message.String())
+
 			}
+
 		}
 	} else {
 		c.Ui.Say("\n==> Builds finished but no artifacts were created.")
 	}
 
-	if len(errors.m) > 0 {
+	if len(errs.m) > 0 {
 		// If any errors occurred, exit with a non-zero exit status
 		ret = 1
 	}
@@ -396,7 +472,11 @@ Options:
   -parallel-builds=1            Number of builds to run in parallel. 1 disables parallelization. 0 means no limit (Default: 0)
   -timestamp-ui                 Enable prefixing of each ui output with an RFC3339 timestamp.
   -var 'key=value'              Variable for templates, can be used multiple times.
-  -var-file=path                JSON or HCL2 file containing user variables.
+  -var-file=path                JSON or HCL2 file containing user variables, can be used multiple times.
+  -warn-on-undeclared-var       Display warnings for user variable files containing undeclared variables.
+  -ignore-prerelease-plugins    Disable the loading of prerelease plugin binaries (x.y.z-dev).
+  -use-sequential-evaluation    Fallback to using a sequential approach for local/datasource evaluation.
+  -skip-enforcement             Skip injection of HCP Packer enforced provisioners.
 `
 
 	return strings.TrimSpace(helpText)
@@ -407,7 +487,7 @@ func (*BuildCommand) Synopsis() string {
 }
 
 func (*BuildCommand) AutocompleteArgs() complete.Predictor {
-	return complete.PredictNothing
+	return complete.PredictFiles("*")
 }
 
 func (*BuildCommand) AutocompleteFlags() complete.Flags {

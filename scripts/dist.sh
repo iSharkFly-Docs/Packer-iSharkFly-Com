@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Copyright IBM Corp. 2024, 2026
+# SPDX-License-Identifier: BUSL-1.1
+
 set -e
 
 # Get the parent directory of where this script is.

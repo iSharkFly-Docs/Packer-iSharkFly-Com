@@ -1,10 +1,13 @@
+// Copyright IBM Corp. 2024, 2026
+// SPDX-License-Identifier: BUSL-1.1
+
 package powershell
 
 import (
 	"bytes"
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"regexp"
 	"strings"
@@ -21,7 +24,8 @@ func TestProvisionerPrepare_extractScript(t *testing.T) {
 	config := testConfig()
 	p := new(Provisioner)
 	_ = p.Prepare(config)
-	file, err := extractScript(p)
+	p.generatedData = generatedData()
+	file, err := extractInlineScript(p)
 	defer os.Remove(file)
 	if err != nil {
 		t.Fatalf("Should not be error: %s", err)
@@ -32,14 +36,16 @@ func TestProvisionerPrepare_extractScript(t *testing.T) {
 	}
 
 	// File contents should contain 2 lines concatenated by newlines: foo\nbar
-	readFile, err := ioutil.ReadFile(file)
-	expectedContents := "foo\nbar\n"
+	readFile, err := os.ReadFile(file)
+	expectedContents := "if (Test-Path variable:global:ProgressPreference) {\n         set-variable -name variable:global:ProgressPreference -value 'SilentlyContinue'\n         }\n         \n         $exitCode = 0\n         try {\n         $env:PACKER_BUILDER_TYPE=\"\"; $env:PACKER_BUILD_NAME=\"\"; \n         foo\n         bar\n         \n         $exitCode = 0\n         } catch {\n         Write-Error \"An error occurred: $_\"\n         $exitCode = 1\n         }\n         \n         if ((Test-Path variable:global:LASTEXITCODE) -and $LASTEXITCODE -ne $null -and $LASTEXITCODE -ne 0) {\n         $exitCode = $LASTEXITCODE\n         }\n         exit $exitCode"
+	normalizedExpectedContent := normalizeWhiteSpace(expectedContents)
 	if err != nil {
 		t.Fatalf("Should not be error: %s", err)
 	}
 	s := string(readFile[:])
-	if s != expectedContents {
-		t.Fatalf("Expected generated inlineScript to equal '%s', got '%s'", expectedContents, s)
+	normalizedString := normalizeWhiteSpace(s)
+	if normalizedString != normalizedExpectedContent {
+		t.Fatalf("Expected generated inlineScript to equal '%s', got '%s'", normalizedExpectedContent, normalizedString)
 	}
 }
 
@@ -72,12 +78,12 @@ func TestProvisionerPrepare_Defaults(t *testing.T) {
 		t.Error("expected elevated_password to be empty")
 	}
 
-	if p.config.ExecuteCommand != `powershell -executionpolicy bypass "& { if (Test-Path variable:global:ProgressPreference){set-variable -name variable:global:ProgressPreference -value 'SilentlyContinue'};. {{.Vars}}; &'{{.Path}}'; exit $LastExitCode }"` {
-		t.Fatalf(`Default command should be 'powershell -executionpolicy bypass "& { if (Test-Path variable:global:ProgressPreference){set-variable -name variable:global:ProgressPreference -value 'SilentlyContinue'};. {{.Vars}}; &'{{.Path}}'; exit $LastExitCode }"', but got '%s'`, p.config.ExecuteCommand)
+	if p.config.ExecuteCommand != `powershell -executionpolicy bypass -file {{.Path}}` {
+		t.Fatalf(`Default command should be 'powershell -executionpolicy bypass -file {{.Path}}', but got '%s'`, p.config.ExecuteCommand)
 	}
 
-	if p.config.ElevatedExecuteCommand != `powershell -executionpolicy bypass "& { if (Test-Path variable:global:ProgressPreference){set-variable -name variable:global:ProgressPreference -value 'SilentlyContinue'};. {{.Vars}}; &'{{.Path}}'; exit $LastExitCode }"` {
-		t.Fatalf(`Default command should be 'powershell -executionpolicy bypass "& { if (Test-Path variable:global:ProgressPreference){set-variable -name variable:global:ProgressPreference -value 'SilentlyContinue'};. {{.Vars}}; &'{{.Path}}'; exit $LastExitCode }"', but got '%s'`, p.config.ElevatedExecuteCommand)
+	if p.config.ElevatedExecuteCommand != `powershell -executionpolicy bypass -file {{.Path}}` {
+		t.Fatalf(`Default command should be 'powershell -executionpolicy bypass -file {{.Path}}', but got '%s'`, p.config.ElevatedExecuteCommand)
 	}
 
 	if p.config.ElevatedEnvVarFormat != `$env:%s="%s"; ` {
@@ -118,9 +124,9 @@ func TestProvisionerPrepare_DebugMode(t *testing.T) {
 		t.Fatalf("err: %s", err)
 	}
 
-	command := `powershell -executionpolicy bypass "& { if (Test-Path variable:global:ProgressPreference){set-variable -name variable:global:ProgressPreference -value 'SilentlyContinue'};Set-PsDebug -Trace 1;. {{.Vars}}; &'{{.Path}}'; exit $LastExitCode }"`
+	command := `powershell -executionpolicy bypass -file {{.Path}}`
 	if p.config.ExecuteCommand != command {
-		t.Fatalf(fmt.Sprintf(`Expected command should be '%s' but got '%s'`, command, p.config.ExecuteCommand))
+		t.Fatalf(`Expected command should be '%s' but got '%s'`, command, p.config.ExecuteCommand)
 	}
 }
 
@@ -184,7 +190,7 @@ func TestProvisionerPrepare_Script(t *testing.T) {
 	}
 
 	// Test with a good one
-	tf, err := ioutil.TempFile("", "packer")
+	tf, err := os.CreateTemp("", "packer")
 	if err != nil {
 		t.Fatalf("error tempfile: %s", err)
 	}
@@ -211,7 +217,7 @@ func TestProvisionerPrepare_ScriptAndInline(t *testing.T) {
 	}
 
 	// Test with both
-	tf, err := ioutil.TempFile("", "packer")
+	tf, err := os.CreateTemp("", "packer")
 	if err != nil {
 		t.Fatalf("error tempfile: %s", err)
 	}
@@ -231,7 +237,7 @@ func TestProvisionerPrepare_ScriptAndScripts(t *testing.T) {
 	config := testConfig()
 
 	// Test with both
-	tf, err := ioutil.TempFile("", "packer")
+	tf, err := os.CreateTemp("", "packer")
 	if err != nil {
 		t.Fatalf("error tempfile: %s", err)
 	}
@@ -258,7 +264,7 @@ func TestProvisionerPrepare_Scripts(t *testing.T) {
 	}
 
 	// Test with a good one
-	tf, err := ioutil.TempFile("", "packer")
+	tf, err := os.CreateTemp("", "packer")
 	if err != nil {
 		t.Fatalf("error tempfile: %s", err)
 	}
@@ -270,6 +276,24 @@ func TestProvisionerPrepare_Scripts(t *testing.T) {
 	err = p.Prepare(config)
 	if err != nil {
 		t.Fatalf("should not have error: %s", err)
+	}
+}
+
+func TestProvisionerPrepare_Pwsh(t *testing.T) {
+
+	config := testConfig()
+
+	config["use_pwsh"] = true
+
+	p := new(Provisioner)
+	err := p.Prepare(config)
+
+	if err != nil {
+		t.Fatalf("Should not be error: %s", err)
+	}
+
+	if !p.config.UsePwsh {
+		t.Fatalf("Expected 'pwsh' to be: true")
 	}
 }
 
@@ -381,6 +405,42 @@ func TestProvisionerProvision_ValidExitCodes(t *testing.T) {
 	}
 }
 
+func TestProvisionerProvision_PauseAfter(t *testing.T) {
+	config := testConfig()
+	delete(config, "inline")
+
+	// Defaults provided by Packer
+	config["remote_path"] = "c:/Windows/Temp/inlineScript.ps1"
+	config["inline"] = []string{"whoami"}
+	ui := testUi()
+	p := new(Provisioner)
+
+	// Defaults provided by Packer
+	p.config.PackerBuildName = "vmware"
+	p.config.PackerBuilderType = "iso"
+	p.config.ValidExitCodes = []int{0, 200}
+	pause_amount := time.Second
+	p.config.PauseAfter = pause_amount
+	comm := new(packersdk.MockCommunicator)
+	comm.StartExitStatus = 200
+	err := p.Prepare(config)
+	if err != nil {
+		t.Fatalf("Prepar failed: %s", err)
+	}
+
+	start_time := time.Now()
+	err = p.Provision(context.Background(), ui, comm, generatedData())
+	end_time := time.Now()
+
+	if err != nil {
+		t.Fatal("should not have error")
+	}
+
+	if end_time.Sub(start_time) < pause_amount {
+		t.Fatal("Didn't wait pause_amount")
+	}
+}
+
 func TestProvisionerProvision_InvalidExitCodes(t *testing.T) {
 	config := testConfig()
 	delete(config, "inline")
@@ -427,7 +487,8 @@ func TestProvisionerProvision_Inline(t *testing.T) {
 	}
 
 	cmd := comm.StartCmd.Command
-	re := regexp.MustCompile(`powershell -executionpolicy bypass "& { if \(Test-Path variable:global:ProgressPreference\){set-variable -name variable:global:ProgressPreference -value 'SilentlyContinue'};\. c:/Windows/Temp/packer-ps-env-vars-[[:alnum:]]{8}-[[:alnum:]]{4}-[[:alnum:]]{4}-[[:alnum:]]{4}-[[:alnum:]]{12}\.ps1; &'c:/Windows/Temp/inlineScript.ps1'; exit \$LastExitCode }"`)
+	re := regexp.MustCompile(`powershell -executionpolicy bypass -file c:/Windows/Temp/inlineScript.ps1`)
+
 	matched := re.MatchString(cmd)
 	if !matched {
 		t.Fatalf("Got unexpected command: %s", cmd)
@@ -447,7 +508,7 @@ func TestProvisionerProvision_Inline(t *testing.T) {
 	}
 
 	cmd = comm.StartCmd.Command
-	re = regexp.MustCompile(`powershell -executionpolicy bypass "& { if \(Test-Path variable:global:ProgressPreference\){set-variable -name variable:global:ProgressPreference -value 'SilentlyContinue'};\. c:/Windows/Temp/packer-ps-env-vars-[[:alnum:]]{8}-[[:alnum:]]{4}-[[:alnum:]]{4}-[[:alnum:]]{4}-[[:alnum:]]{12}\.ps1; &'c:/Windows/Temp/inlineScript.ps1'; exit \$LastExitCode }"`)
+	re = regexp.MustCompile(`powershell -executionpolicy bypass -file c:/Windows/Temp/inlineScript.ps1`)
 	matched = re.MatchString(cmd)
 	if !matched {
 		t.Fatalf("Got unexpected command: %s", cmd)
@@ -455,7 +516,7 @@ func TestProvisionerProvision_Inline(t *testing.T) {
 }
 
 func TestProvisionerProvision_Scripts(t *testing.T) {
-	tempFile, _ := ioutil.TempFile("", "packer")
+	tempFile, _ := os.CreateTemp("", "packer")
 	defer os.Remove(tempFile.Name())
 	defer tempFile.Close()
 
@@ -485,7 +546,7 @@ func TestProvisionerProvision_Scripts(t *testing.T) {
 }
 
 func TestProvisionerProvision_ScriptsWithEnvVars(t *testing.T) {
-	tempFile, _ := ioutil.TempFile("", "packer")
+	tempFile, _ := os.CreateTemp("", "packer")
 	ui := testUi()
 	defer os.Remove(tempFile.Name())
 	defer tempFile.Close()
@@ -522,7 +583,7 @@ func TestProvisionerProvision_ScriptsWithEnvVars(t *testing.T) {
 }
 
 func TestProvisionerProvision_SkipClean(t *testing.T) {
-	tempFile, _ := ioutil.TempFile("", "packer")
+	tempFile, _ := os.CreateTemp("", "packer")
 	defer func() {
 		tempFile.Close()
 		os.Remove(tempFile.Name())
@@ -606,16 +667,44 @@ func TestProvisioner_createFlattenedElevatedEnvVars_windows(t *testing.T) {
 		{"FOO=bar`baz"},  // User env var with value containing a backtick
 
 	}
+	userEnvVarmapTests := []map[string]string{
+		{},
+		{
+			"BAR": "foo",
+		},
+		{
+			"BAR": "foo",
+			"YAR": "yaa",
+		},
+		{
+			"BAR": "foo=yaa",
+		},
+		{
+			"BAR": "=foo",
+		},
+		{
+			"BAR": "foo$yaa",
+		},
+		{
+			"BAR": "foo\"yaa",
+		},
+		{
+			"BAR": "foo'yaa",
+		},
+		{
+			"BAR": "foo`yaa",
+		},
+	}
 	expected := []string{
 		`$env:PACKER_BUILDER_TYPE="iso"; $env:PACKER_BUILD_NAME="vmware"; `,
-		`$env:FOO="bar"; $env:PACKER_BUILDER_TYPE="iso"; $env:PACKER_BUILD_NAME="vmware"; `,
-		`$env:BAZ="qux"; $env:FOO="bar"; $env:PACKER_BUILDER_TYPE="iso"; $env:PACKER_BUILD_NAME="vmware"; `,
-		`$env:FOO="bar=baz"; $env:PACKER_BUILDER_TYPE="iso"; $env:PACKER_BUILD_NAME="vmware"; `,
-		`$env:FOO="=bar"; $env:PACKER_BUILDER_TYPE="iso"; $env:PACKER_BUILD_NAME="vmware"; `,
-		"$env:FOO=\"bar`$baz\"; $env:PACKER_BUILDER_TYPE=\"iso\"; $env:PACKER_BUILD_NAME=\"vmware\"; ",
-		"$env:FOO=\"bar`\"baz\"; $env:PACKER_BUILDER_TYPE=\"iso\"; $env:PACKER_BUILD_NAME=\"vmware\"; ",
-		"$env:FOO=\"bar`'baz\"; $env:PACKER_BUILDER_TYPE=\"iso\"; $env:PACKER_BUILD_NAME=\"vmware\"; ",
-		"$env:FOO=\"bar``baz\"; $env:PACKER_BUILDER_TYPE=\"iso\"; $env:PACKER_BUILD_NAME=\"vmware\"; ",
+		`$env:BAR="foo"; $env:FOO="bar"; $env:PACKER_BUILDER_TYPE="iso"; $env:PACKER_BUILD_NAME="vmware"; `,
+		`$env:BAR="foo"; $env:BAZ="qux"; $env:FOO="bar"; $env:PACKER_BUILDER_TYPE="iso"; $env:PACKER_BUILD_NAME="vmware"; $env:YAR="yaa"; `,
+		`$env:BAR="foo=yaa"; $env:FOO="bar=baz"; $env:PACKER_BUILDER_TYPE="iso"; $env:PACKER_BUILD_NAME="vmware"; `,
+		`$env:BAR="=foo"; $env:FOO="=bar"; $env:PACKER_BUILDER_TYPE="iso"; $env:PACKER_BUILD_NAME="vmware"; `,
+		"$env:BAR=\"foo`$yaa\"; $env:FOO=\"bar`$baz\"; $env:PACKER_BUILDER_TYPE=\"iso\"; $env:PACKER_BUILD_NAME=\"vmware\"; ",
+		"$env:BAR=\"foo`\"yaa\"; $env:FOO=\"bar`\"baz\"; $env:PACKER_BUILDER_TYPE=\"iso\"; $env:PACKER_BUILD_NAME=\"vmware\"; ",
+		"$env:BAR=\"foo`'yaa\"; $env:FOO=\"bar`'baz\"; $env:PACKER_BUILDER_TYPE=\"iso\"; $env:PACKER_BUILD_NAME=\"vmware\"; ",
+		"$env:BAR=\"foo``yaa\"; $env:FOO=\"bar``baz\"; $env:PACKER_BUILDER_TYPE=\"iso\"; $env:PACKER_BUILD_NAME=\"vmware\"; ",
 	}
 
 	p := new(Provisioner)
@@ -628,6 +717,7 @@ func TestProvisioner_createFlattenedElevatedEnvVars_windows(t *testing.T) {
 
 	for i, expectedValue := range expected {
 		p.config.Vars = userEnvVarTests[i]
+		p.config.Env = userEnvVarmapTests[i]
 		flattenedEnvVars = p.createFlattenedEnvVars(true)
 		if flattenedEnvVars != expectedValue {
 			t.Fatalf("expected flattened env vars to be: %s, got %s.", expectedValue, flattenedEnvVars)
@@ -758,16 +848,44 @@ func TestProvisioner_createFlattenedEnvVars_windows(t *testing.T) {
 		{"FOO=bar'baz"},  // User env var with value containing a single quote
 		{"FOO=bar`baz"},  // User env var with value containing a backtick
 	}
+	userEnvVarmapTests := []map[string]string{
+		{},
+		{
+			"BAR": "foo",
+		},
+		{
+			"BAR": "foo",
+			"YAR": "yaa",
+		},
+		{
+			"BAR": "foo=yaa",
+		},
+		{
+			"BAR": "=foo",
+		},
+		{
+			"BAR": "foo$yaa",
+		},
+		{
+			"BAR": "foo\"yaa",
+		},
+		{
+			"BAR": "foo'yaa",
+		},
+		{
+			"BAR": "foo`yaa",
+		},
+	}
 	expected := []string{
 		`$env:PACKER_BUILDER_TYPE="iso"; $env:PACKER_BUILD_NAME="vmware"; `,
-		`$env:FOO="bar"; $env:PACKER_BUILDER_TYPE="iso"; $env:PACKER_BUILD_NAME="vmware"; `,
-		`$env:BAZ="qux"; $env:FOO="bar"; $env:PACKER_BUILDER_TYPE="iso"; $env:PACKER_BUILD_NAME="vmware"; `,
-		`$env:FOO="bar=baz"; $env:PACKER_BUILDER_TYPE="iso"; $env:PACKER_BUILD_NAME="vmware"; `,
-		`$env:FOO="=bar"; $env:PACKER_BUILDER_TYPE="iso"; $env:PACKER_BUILD_NAME="vmware"; `,
-		"$env:FOO=\"bar`$baz\"; $env:PACKER_BUILDER_TYPE=\"iso\"; $env:PACKER_BUILD_NAME=\"vmware\"; ",
-		"$env:FOO=\"bar`\"baz\"; $env:PACKER_BUILDER_TYPE=\"iso\"; $env:PACKER_BUILD_NAME=\"vmware\"; ",
-		"$env:FOO=\"bar`'baz\"; $env:PACKER_BUILDER_TYPE=\"iso\"; $env:PACKER_BUILD_NAME=\"vmware\"; ",
-		"$env:FOO=\"bar``baz\"; $env:PACKER_BUILDER_TYPE=\"iso\"; $env:PACKER_BUILD_NAME=\"vmware\"; ",
+		`$env:BAR="foo"; $env:FOO="bar"; $env:PACKER_BUILDER_TYPE="iso"; $env:PACKER_BUILD_NAME="vmware"; `,
+		`$env:BAR="foo"; $env:BAZ="qux"; $env:FOO="bar"; $env:PACKER_BUILDER_TYPE="iso"; $env:PACKER_BUILD_NAME="vmware"; $env:YAR="yaa"; `,
+		`$env:BAR="foo=yaa"; $env:FOO="bar=baz"; $env:PACKER_BUILDER_TYPE="iso"; $env:PACKER_BUILD_NAME="vmware"; `,
+		`$env:BAR="=foo"; $env:FOO="=bar"; $env:PACKER_BUILDER_TYPE="iso"; $env:PACKER_BUILD_NAME="vmware"; `,
+		"$env:BAR=\"foo`$yaa\"; $env:FOO=\"bar`$baz\"; $env:PACKER_BUILDER_TYPE=\"iso\"; $env:PACKER_BUILD_NAME=\"vmware\"; ",
+		"$env:BAR=\"foo`\"yaa\"; $env:FOO=\"bar`\"baz\"; $env:PACKER_BUILDER_TYPE=\"iso\"; $env:PACKER_BUILD_NAME=\"vmware\"; ",
+		"$env:BAR=\"foo`'yaa\"; $env:FOO=\"bar`'baz\"; $env:PACKER_BUILDER_TYPE=\"iso\"; $env:PACKER_BUILD_NAME=\"vmware\"; ",
+		"$env:BAR=\"foo``yaa\"; $env:FOO=\"bar``baz\"; $env:PACKER_BUILDER_TYPE=\"iso\"; $env:PACKER_BUILD_NAME=\"vmware\"; ",
 	}
 
 	p := new(Provisioner)
@@ -780,6 +898,7 @@ func TestProvisioner_createFlattenedEnvVars_windows(t *testing.T) {
 
 	for i, expectedValue := range expected {
 		p.config.Vars = userEnvVarTests[i]
+		p.config.Env = userEnvVarmapTests[i]
 		flattenedEnvVars = p.createFlattenedEnvVars(false)
 		if flattenedEnvVars != expectedValue {
 			t.Fatalf("expected flattened env vars to be: %s, got %s.", expectedValue, flattenedEnvVars)
@@ -803,7 +922,7 @@ func TestProvision_createCommandText(t *testing.T) {
 	p.generatedData = make(map[string]interface{})
 	cmd, _ := p.createCommandText()
 
-	re := regexp.MustCompile(`powershell -executionpolicy bypass "& { if \(Test-Path variable:global:ProgressPreference\){set-variable -name variable:global:ProgressPreference -value 'SilentlyContinue'};\. c:/Windows/Temp/packer-ps-env-vars-[[:alnum:]]{8}-[[:alnum:]]{4}-[[:alnum:]]{4}-[[:alnum:]]{4}-[[:alnum:]]{12}\.ps1; &'c:/Windows/Temp/script.ps1'; exit \$LastExitCode }"`)
+	re := regexp.MustCompile(`powershell -executionpolicy bypass -file c:/Windows/Temp/script.ps1`)
 	matched := re.MatchString(cmd)
 	if !matched {
 		t.Fatalf("Got unexpected command: %s", cmd)
@@ -820,6 +939,28 @@ func TestProvision_createCommandText(t *testing.T) {
 	}
 }
 
+func TestProvision_createCommandTextNoneExecutionPolicy(t *testing.T) {
+	config := testConfig()
+	config["remote_path"] = "c:/Windows/Temp/script.ps1"
+	p := new(Provisioner)
+
+	comm := new(packersdk.MockCommunicator)
+	p.communicator = comm
+	config["execution_policy"] = ExecutionPolicyNone
+	_ = p.Prepare(config)
+
+	// Non-elevated
+	p.generatedData = make(map[string]interface{})
+
+	cmd, _ := p.createCommandText()
+	re := regexp.MustCompile(`-file c:/Windows/Temp/script.ps1`)
+	matched := re.MatchString(cmd)
+	if !matched {
+		t.Fatalf("Got unexpected command: %s", cmd)
+	}
+
+}
+
 func TestProvision_uploadEnvVars(t *testing.T) {
 	p := new(Provisioner)
 	comm := new(packersdk.MockCommunicator)
@@ -834,6 +975,62 @@ func TestProvision_uploadEnvVars(t *testing.T) {
 
 	if comm.UploadCalled != true {
 		t.Fatalf("Failed to upload env var file")
+	}
+}
+
+// flakyUploadCommunicator fails the first Upload after reading readOnFail
+// bytes from the reader, and records the data of every later Upload.
+type flakyUploadCommunicator struct {
+	packersdk.MockCommunicator
+	readOnFail  int
+	uploadCalls int
+	uploads     []string
+}
+
+func (c *flakyUploadCommunicator) Upload(path string, r io.Reader, fi *os.FileInfo) error {
+	c.uploadCalls++
+	if c.uploadCalls == 1 {
+		if _, err := io.CopyN(io.Discard, r, int64(c.readOnFail)); err != nil {
+			return err
+		}
+		return fmt.Errorf("transient upload error")
+	}
+	data, err := io.ReadAll(r)
+	if err != nil {
+		return err
+	}
+	c.uploads = append(c.uploads, string(data))
+	return nil
+}
+
+func TestProvision_uploadEnvVarsRetry(t *testing.T) {
+	flattenedEnvVars := `$env:PACKER_BUILDER_TYPE="footype"; $env:PACKER_BUILD_NAME="foobuild";`
+
+	tests := []struct {
+		name       string
+		readOnFail int
+	}{
+		{"partial read before failure", 10},
+		{"full read before failure", len(flattenedEnvVars)},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := new(Provisioner)
+			comm := &flakyUploadCommunicator{readOnFail: tt.readOnFail}
+			p.communicator = comm
+
+			if err := p.uploadEnvVars(flattenedEnvVars); err != nil {
+				t.Fatalf("Did not expect error: %s", err.Error())
+			}
+
+			if comm.uploadCalls != 2 {
+				t.Fatalf("expected 2 upload attempts, got %d", comm.uploadCalls)
+			}
+			if comm.uploads[0] != flattenedEnvVars {
+				t.Fatalf("retried upload sent %q, expected %q", comm.uploads[0], flattenedEnvVars)
+			}
+		})
 	}
 }
 
@@ -861,4 +1058,19 @@ func generatedData() map[string]interface{} {
 		"PackerHTTPIP":   commonsteps.HttpIPNotImplemented,
 		"PackerHTTPPort": commonsteps.HttpPortNotImplemented,
 	}
+}
+
+func normalizeWhiteSpace(s string) string {
+	// Replace multiple spaces/tabs with a single space
+	re := regexp.MustCompile(`[\t ]+`)
+	s = re.ReplaceAllString(s, " ")
+
+	// Trim leading/trailing spaces and newlines
+	s = strings.TrimSpace(s)
+
+	// Normalize line breaks (remove excessive empty lines)
+	s = strings.ReplaceAll(s, "\r\n", "\n") // Convert Windows line endings to Unix
+	s = strings.ReplaceAll(s, "\r", "\n")   // Convert old Mac line endings to Unix
+
+	return s
 }

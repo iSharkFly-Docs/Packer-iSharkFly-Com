@@ -1,3 +1,6 @@
+// Copyright IBM Corp. 2024, 2026
+// SPDX-License-Identifier: BUSL-1.1
+
 //go:generate packer-sdc mapstructure-to-hcl2 -type Config
 
 // This package implements a provisioner for Packer that executes
@@ -25,7 +28,7 @@ import (
 	"github.com/hashicorp/packer-plugin-sdk/tmp"
 )
 
-//FIXME query remote host or use %SYSTEMROOT%, %TEMP% and more creative filename
+// FIXME query remote host or use %SYSTEMROOT%, %TEMP% and more creative filename
 const DefaultRemotePath = "c:/Windows/Temp/script.bat"
 
 type Config struct {
@@ -258,6 +261,11 @@ func (p *Provisioner) createFlattenedEnvVars() (flattened string) {
 		keyValue := strings.SplitN(envVar, "=", 2)
 		envVars[keyValue[0]] = keyValue[1]
 	}
+
+	for k, v := range p.config.Env {
+		envVars[k] = v
+	}
+
 	// Create a list of env var keys in sorted order
 	var keys []string
 	for k := range envVars {

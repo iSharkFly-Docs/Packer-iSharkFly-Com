@@ -1,7 +1,10 @@
+// Copyright IBM Corp. 2024, 2026
+// SPDX-License-Identifier: BUSL-1.1
+
 package null
 
 import (
-	"fmt"
+	registryimage "github.com/hashicorp/packer-plugin-sdk/packer/registry/image"
 )
 
 // dummy Artifact implementation - does nothing
@@ -21,16 +24,26 @@ func (*NullArtifact) Id() string {
 }
 
 func (a *NullArtifact) String() string {
-	return fmt.Sprintf("Did not export anything. This is the null builder")
+	return "Did not export anything. This is the null builder"
 }
 
 func (a *NullArtifact) State(name string) interface{} {
-	if name == "generated_data" {
+	switch name {
+	case registryimage.ArtifactStateURI:
+		img, _ := registryimage.FromArtifact(a,
+			registryimage.WithID(a.Id()),
+			registryimage.WithProvider("null"),
+			registryimage.WithRegion("null"),
+			registryimage.WithSourceID("null"),
+		)
+		return img
+	case "generated_data":
 		return map[interface{}]interface{}{
 			"ID": "Null",
 		}
+	default:
+		return nil
 	}
-	return nil
 }
 
 func (a *NullArtifact) Destroy() error {

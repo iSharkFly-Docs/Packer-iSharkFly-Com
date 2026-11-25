@@ -1,3 +1,6 @@
+// Copyright IBM Corp. 2024, 2026
+// SPDX-License-Identifier: BUSL-1.1
+
 //go:generate packer-sdc mapstructure-to-hcl2 -type Config
 
 // This package implements a provisioner for Packer that executes
@@ -63,6 +66,11 @@ type Config struct {
 	// name of the tmp environment variable file, if UseEnvVarFile is true
 	envVarFile string
 
+	// Set true if user provided a shebang for inline scripts.
+	// This is used to determine if the default shebang must be used
+	// or should be taken from inline commands
+	inlineShebangDefined bool
+
 	ctx interpolate.Context
 }
 
@@ -110,6 +118,8 @@ func (p *Provisioner) Prepare(raws ...interface{}) error {
 
 	if p.config.InlineShebang == "" {
 		p.config.InlineShebang = "/bin/sh -e"
+	} else {
+		p.config.inlineShebangDefined = true
 	}
 
 	if p.config.StartRetryTimeout == 0 {
@@ -198,21 +208,30 @@ func (p *Provisioner) Provision(ctx context.Context, ui packersdk.Ui, comm packe
 		// Set the path to the temporary file
 		scripts = append(scripts, tf.Name())
 
-		// Write our contents to it
-		writer := bufio.NewWriter(tf)
-		writer.WriteString(fmt.Sprintf("#!%s\n", p.config.InlineShebang))
+		// Write all inline commands to this buffer
+		commandBuffer := strings.Builder{}
 		for _, command := range p.config.Inline {
 			p.config.ctx.Data = generatedData
 			command, err := interpolate.Render(command, &p.config.ctx)
 			if err != nil {
 				return fmt.Errorf("Error interpolating Inline: %s", err)
 			}
-			if _, err := writer.WriteString(command + "\n"); err != nil {
+			if _, err := fmt.Fprintf(&commandBuffer, "%s\n", command); err != nil {
 				return fmt.Errorf("Error preparing shell script: %s", err)
 			}
 		}
 
-		if err := writer.Flush(); err != nil {
+		// If the user has defined an inline shebang, use that.
+		// Or If command does not start with a shebang, use the default shebang.
+		// else command already has a shebang, so do not write it.
+		if p.config.inlineShebangDefined || !strings.HasPrefix(commandBuffer.String(), "#!") {
+			if _, err := fmt.Fprintf(tf, "#!%s\n", p.config.InlineShebang); err != nil {
+				return fmt.Errorf("Error preparing shell script: %s", err)
+			}
+		}
+
+		// Write the collected commands to the file
+		if _, err := tf.WriteString(commandBuffer.String()); err != nil {
 			return fmt.Errorf("Error preparing shell script: %s", err)
 		}
 
@@ -369,10 +388,7 @@ func (p *Provisioner) Provision(ctx context.Context, ui packersdk.Ui, comm packe
 
 	if p.config.PauseAfter != 0 {
 		ui.Say(fmt.Sprintf("Pausing %s after this provisioner...", p.config.PauseAfter))
-		select {
-		case <-time.After(p.config.PauseAfter):
-			return nil
-		}
+		time.Sleep(p.config.PauseAfter)
 	}
 
 	return nil
@@ -436,6 +452,13 @@ func (p *Provisioner) escapeEnvVars() ([]string, map[string]string) {
 		// Store pair, replacing any single quotes in value so they parse
 		// correctly with required environment variable format
 		envVars[keyValue[0]] = strings.Replace(keyValue[1], "'", `'"'"'`, -1)
+	}
+
+	// Add the environment variables defined in the HCL specs
+	for k, v := range p.config.Env {
+		// As with p.config.Vars, we escape single-quotes so they're not
+		// misinterpreted by the remote shell.
+		envVars[k] = strings.Replace(v, "'", `'"'"'`, -1)
 	}
 
 	// Create a list of env var keys in sorted order

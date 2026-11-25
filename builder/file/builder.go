@@ -1,3 +1,6 @@
+// Copyright IBM Corp. 2024, 2026
+// SPDX-License-Identifier: BUSL-1.1
+
 package file
 
 /*
@@ -9,12 +12,10 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 
 	"github.com/hashicorp/hcl/v2/hcldec"
-	"github.com/hashicorp/packer-plugin-sdk/multistep"
 	packersdk "github.com/hashicorp/packer-plugin-sdk/packer"
 )
 
@@ -22,7 +23,6 @@ const BuilderId = "packer.file"
 
 type Builder struct {
 	config Config
-	runner multistep.Runner
 }
 
 func (b *Builder) ConfigSpec() hcldec.ObjectSpec { return b.config.FlatMapstructure().HCL2Spec() }
@@ -68,14 +68,17 @@ func (b *Builder) Run(ctx context.Context, ui packersdk.Ui, hook packersdk.Hook)
 			return nil, err
 		}
 		ui.Say(fmt.Sprintf("Copied %d bytes", bytes))
+
+		artifact.source = b.config.Source
 		artifact.filename = target.Name()
 	} else {
 		// We're going to write Contents; if it's empty we'll just create an
 		// empty file.
-		err := ioutil.WriteFile(b.config.Target, []byte(b.config.Content), 0600)
+		err := os.WriteFile(b.config.Target, []byte(b.config.Content), 0600)
 		if err != nil {
 			return nil, err
 		}
+		artifact.source = "<no-defined-source-file>"
 		artifact.filename = b.config.Target
 	}
 

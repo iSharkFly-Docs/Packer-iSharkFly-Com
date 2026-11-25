@@ -1,3 +1,7 @@
+// Copyright IBM Corp. 2024, 2026
+// SPDX-License-Identifier: BUSL-1.1
+
+//go:build ignore
 // +build ignore
 
 package main
@@ -7,14 +11,13 @@ import (
 	"compress/gzip"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"runtime"
 	"testing"
 
 	"github.com/biogo/hts/bgzf"
 	"github.com/klauspost/pgzip"
-	"github.com/pierrec/lz4"
+	"github.com/pierrec/lz4/v4"
 	"github.com/ulikunitz/xz"
 )
 
@@ -134,7 +137,7 @@ func (c *Compressor) BenchmarkGZIPReader(b *testing.B) {
 	cr, _ := gzip.NewReader(c.w)
 	b.ResetTimer()
 
-	_, err := io.Copy(ioutil.Discard, cr)
+	_, err := io.Copy(io.Discard, cr)
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -155,7 +158,7 @@ func (c *Compressor) BenchmarkBGZFReader(b *testing.B) {
 	cr, _ := bgzf.NewReader(c.w, 0)
 	b.ResetTimer()
 
-	_, err := io.Copy(ioutil.Discard, cr)
+	_, err := io.Copy(io.Discard, cr)
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -177,7 +180,7 @@ func (c *Compressor) BenchmarkPGZIPReader(b *testing.B) {
 	cr, _ := pgzip.NewReader(c.w)
 	b.ResetTimer()
 
-	_, err := io.Copy(ioutil.Discard, cr)
+	_, err := io.Copy(io.Discard, cr)
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -186,7 +189,7 @@ func (c *Compressor) BenchmarkPGZIPReader(b *testing.B) {
 func (c *Compressor) BenchmarkLZ4Writer(b *testing.B) {
 	cw := lz4.NewWriter(c.w)
 	//	cw.Header.HighCompression = true
-	cw.Header.NoChecksum = true
+	cw.Apply(lz4.ChecksumOption(false))
 	b.ResetTimer()
 
 	_, err := io.Copy(cw, c.r)
@@ -201,14 +204,14 @@ func (c *Compressor) BenchmarkLZ4Reader(b *testing.B) {
 	cr := lz4.NewReader(c.w)
 	b.ResetTimer()
 
-	_, err := io.Copy(ioutil.Discard, cr)
+	_, err := io.Copy(io.Discard, cr)
 	if err != nil {
 		b.Fatal(err)
 	}
 }
 
 func (c *Compressor) BenchmarkXZWriter(b *testing.B) {
-	cw := xz.NewWriter(c.w)
+	cw, _ := xz.NewWriter(c.w)
 	b.ResetTimer()
 
 	_, err := io.Copy(cw, c.r)
@@ -220,10 +223,10 @@ func (c *Compressor) BenchmarkXZWriter(b *testing.B) {
 }
 
 func (c *Compressor) BenchmarkXZReader(b *testing.B) {
-	cr := xz.NewReader(c.w)
+	cr, _ := xz.NewReader(c.w)
 	b.ResetTimer()
 
-	_, err := io.Copy(ioutil.Discard, cr)
+	_, err := io.Copy(io.Discard, cr)
 	if err != nil {
 		b.Fatal(err)
 	}

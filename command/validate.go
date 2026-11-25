@@ -1,7 +1,11 @@
+// Copyright IBM Corp. 2024, 2026
+// SPDX-License-Identifier: BUSL-1.1
+
 package command
 
 import (
 	"context"
+	"log"
 	"strings"
 
 	"github.com/hashicorp/packer/packer"
@@ -28,7 +32,7 @@ func (c *ValidateCommand) Run(args []string) int {
 func (c *ValidateCommand) ParseArgs(args []string) (*ValidateArgs, int) {
 	var cfg ValidateArgs
 
-	flags := c.Meta.FlagSet("validate", FlagSetBuildFilter|FlagSetVars)
+	flags := c.Meta.FlagSet("validate")
 	flags.Usage = func() { c.Ui.Say(c.Help()) }
 	cfg.AddFlagSets(flags)
 	if err := flags.Parse(args); err != nil {
@@ -45,6 +49,17 @@ func (c *ValidateCommand) ParseArgs(args []string) (*ValidateArgs, int) {
 }
 
 func (c *ValidateCommand) RunContext(ctx context.Context, cla *ValidateArgs) int {
+	// Set the release only flag if specified as argument
+	//
+	// This deactivates the capacity for Packer to load development binaries.
+	c.CoreConfig.Components.PluginConfig.ReleasesOnly = cla.ReleaseOnly
+
+	// By default we want to inform users of undeclared variables when validating but not during build time.
+	cla.MetaArgs.WarnOnUndeclaredVar = true
+	if cla.NoWarnUndeclaredVar {
+		cla.MetaArgs.WarnOnUndeclaredVar = false
+	}
+
 	packerStarter, ret := c.GetConfig(&cla.MetaArgs)
 	if ret != 0 {
 		return 1
@@ -56,8 +71,19 @@ func (c *ValidateCommand) RunContext(ctx context.Context, cla *ValidateArgs) int
 		return 0
 	}
 
-	diags := packerStarter.Initialize(packer.InitializeOptions{
-		SkipDatasourcesExecution: true,
+	diags := packerStarter.DetectPluginBinaries()
+	ret = writeDiags(c.Ui, nil, diags)
+	if ret != 0 {
+		return ret
+	}
+
+	if packer.PackerUseProto {
+		log.Printf("[TRACE] Using protobuf for communication with plugins")
+	}
+
+	diags = packerStarter.Initialize(packer.InitializeOptions{
+		SkipDatasourcesExecution: !cla.EvaluateDatasources,
+		UseSequential:            cla.UseSequential,
 	})
 	ret = writeDiags(c.Ui, nil, diags)
 	if ret != 0 {
@@ -74,7 +100,12 @@ func (c *ValidateCommand) RunContext(ctx context.Context, cla *ValidateArgs) int
 	})
 	diags = append(diags, fixerDiags...)
 
-	return writeDiags(c.Ui, nil, diags)
+	ret = writeDiags(c.Ui, nil, diags)
+	if ret == 0 {
+		c.Ui.Say("The configuration is valid.")
+	}
+
+	return ret
 }
 
 func (*ValidateCommand) Help() string {
@@ -90,12 +121,16 @@ Usage: packer validate [options] TEMPLATE
 
 Options:
 
-  -syntax-only           Only check syntax. Do not verify config of the template.
-  -except=foo,bar,baz    Validate all builds other than these.
-  -machine-readable      Produce machine-readable output.
-  -only=foo,bar,baz      Validate only these builds.
-  -var 'key=value'       Variable for templates, can be used multiple times.
-  -var-file=path         JSON or HCL2 file containing user variables.
+  -syntax-only                  Only check syntax. Do not verify config of the template.
+  -except=foo,bar,baz           Validate all builds other than these.
+  -only=foo,bar,baz             Validate only these builds.
+  -machine-readable             Produce machine-readable output.
+  -var 'key=value'              Variable for templates, can be used multiple times.
+  -var-file=path                JSON or HCL2 file containing user variables, can be used multiple times.
+  -no-warn-undeclared-var       Disable warnings for user variable files containing undeclared variables.
+  -evaluate-datasources         Evaluate data sources during validation (HCL2 only, may incur costs); Defaults to false. 
+  -ignore-prerelease-plugins    Disable the loading of prerelease plugin binaries (x.y.z-dev).
+  -use-sequential-evaluation    Fallback to using a sequential approach for local/datasource evaluation.
 `
 
 	return strings.TrimSpace(helpText)
@@ -106,7 +141,7 @@ func (*ValidateCommand) Synopsis() string {
 }
 
 func (*ValidateCommand) AutocompleteArgs() complete.Predictor {
-	return complete.PredictNothing
+	return complete.PredictFiles("*")
 }
 
 func (*ValidateCommand) AutocompleteFlags() complete.Flags {

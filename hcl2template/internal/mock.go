@@ -1,3 +1,6 @@
+// Copyright IBM Corp. 2024, 2026
+// SPDX-License-Identifier: BUSL-1.1
+
 //go:generate packer-sdc mapstructure-to-hcl2 -type MockConfig,NestedMockConfig,MockTag
 
 package hcl2template

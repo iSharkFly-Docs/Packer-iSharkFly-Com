@@ -1,3 +1,6 @@
+// Copyright IBM Corp. 2024, 2026
+// SPDX-License-Identifier: BUSL-1.1
+
 package packer
 
 import (
@@ -11,6 +14,7 @@ import (
 	packersdk "github.com/hashicorp/packer-plugin-sdk/packer"
 	"github.com/hashicorp/packer-plugin-sdk/template"
 	configHelper "github.com/hashicorp/packer-plugin-sdk/template/config"
+	"github.com/hashicorp/packer/version"
 )
 
 func TestCoreBuildNames(t *testing.T) {
@@ -42,9 +46,9 @@ func TestCoreBuildNames(t *testing.T) {
 			Template:  tpl,
 			Variables: tc.Vars,
 		})
-		err = core.Initialize()
-		if err != nil {
-			t.Fatalf("err: %s\n\n%s", tc.File, err)
+		diags := core.Initialize(InitializeOptions{})
+		if diags.HasErrors() {
+			t.Fatalf("err: %s\n\n%s", tc.File, diags)
 		}
 
 		names := core.BuildNames(nil, nil)
@@ -65,6 +69,10 @@ func TestCoreBuild_basic(t *testing.T) {
 	build, err := core.Build("test")
 	if err != nil {
 		t.Fatalf("err: %s", err)
+	}
+
+	if build.Name() != "test" {
+		t.Fatalf("bad: build name does not match expected: %q, got: %q", "test", build.Name())
 	}
 
 	if _, err := build.Prepare(); err != nil {
@@ -97,6 +105,10 @@ func TestCoreBuild_basicInterpolated(t *testing.T) {
 		t.Fatalf("err: %s", err)
 	}
 
+	if build.Name() != "test.NAME" {
+		t.Fatalf("bad: build name does not match expected: %q, got: %q", "NAME", build.Name())
+	}
+
 	if _, err := build.Prepare(); err != nil {
 		t.Fatalf("err: %s", err)
 	}
@@ -115,8 +127,7 @@ func TestCoreBuild_basicInterpolated(t *testing.T) {
 }
 
 func TestCoreBuild_env(t *testing.T) {
-	os.Setenv("PACKER_TEST_ENV", "test")
-	defer os.Setenv("PACKER_TEST_ENV", "")
+	t.Setenv("PACKER_TEST_ENV", "test")
 
 	config := TestCoreConfig(t)
 	testCoreTemplate(t, config, fixtureDir("build-env.json"))
@@ -147,8 +158,7 @@ func TestCoreBuild_env(t *testing.T) {
 }
 
 func TestCoreBuild_IgnoreTemplateVariables(t *testing.T) {
-	os.Setenv("PACKER_TEST_ENV", "test")
-	defer os.Setenv("PACKER_TEST_ENV", "")
+	t.Setenv("PACKER_TEST_ENV", "test")
 
 	config := TestCoreConfig(t)
 	testCoreTemplate(t, config, fixtureDir("build-ignore-template-variable.json"))
@@ -494,9 +504,9 @@ func TestCoreValidate(t *testing.T) {
 			Variables: tc.Vars,
 			Version:   "1.0.0",
 		})
-		err = core.Initialize()
+		diags := core.Initialize(InitializeOptions{})
 
-		if (err != nil) != tc.Err {
+		if diags.HasErrors() != tc.Err {
 			t.Fatalf("err: %s\n\n%s", tc.File, err)
 		}
 	}
@@ -542,13 +552,13 @@ func TestCore_InterpolateUserVars(t *testing.T) {
 			Template: tpl,
 			Version:  "1.0.0",
 		})
-		err = ccf.Initialize()
+		diags := ccf.Initialize(InitializeOptions{})
 
-		if (err != nil) != tc.Err {
+		if diags.HasErrors() != tc.Err {
 			if tc.Err == false {
-				t.Fatalf("Error interpolating %s: Expected no error, but got: %s", tc.File, err)
+				t.Fatalf("Error interpolating %s: Expected no error, but got: %s", tc.File, diags)
 			} else {
-				t.Fatalf("Error interpolating %s: Expected an error, but got: %s", tc.File, err)
+				t.Fatalf("Error interpolating %s: Expected an error, but got: %s", tc.File, diags)
 			}
 
 		}
@@ -615,10 +625,10 @@ func TestCore_InterpolateUserVars_VarFile(t *testing.T) {
 			Version:   "1.0.0",
 			Variables: tc.Variables,
 		})
-		err = ccf.Initialize()
+		diags := ccf.Initialize(InitializeOptions{})
 
-		if (err != nil) != tc.Err {
-			t.Fatalf("err: %s\n\n%s", tc.File, err)
+		if diags.HasErrors() != tc.Err {
+			t.Fatalf("err: %s\n\n%s", tc.File, diags)
 		}
 		if !tc.Err {
 			for k, v := range ccf.variables {
@@ -675,10 +685,10 @@ func TestSensitiveVars(t *testing.T) {
 			Variables: tc.Vars,
 			Version:   "1.0.0",
 		})
-		err = ccf.Initialize()
+		diags := ccf.Initialize(InitializeOptions{})
 
-		if (err != nil) != tc.Err {
-			t.Fatalf("err: %s\n\n%s", tc.File, err)
+		if diags.HasErrors() != tc.Err {
+			t.Fatalf("err: %s\n\n%s", tc.File, diags)
 		}
 		// Check that filter correctly manipulates strings:
 		filtered := packersdk.LogSecretFilter.FilterString("the foo jumped over the bar_extra_sensitive_probably_a_password")
@@ -696,7 +706,7 @@ func TestIsDoneInterpolating(t *testing.T) {
 		expectedErr  bool
 	}{
 		// Many of these tests are just exercising the regex to make sure it
-		// doesnt get confused by different kinds of whitespace
+		// doesn't get confused by different kinds of whitespace
 		{"charmander-{{ user `spacesaroundticks` }}", false, false},
 		{"pidgey-{{ user `partyparrot`}}", false, false},
 		{"jigglypuff-{{ user`notickspaaces`}}", false, false},
@@ -732,10 +742,10 @@ func TestIsDoneInterpolating(t *testing.T) {
 }
 
 func TestEnvAndFileVars(t *testing.T) {
-	os.Setenv("INTERPOLATE_TEST_ENV_1", "bulbasaur")
-	os.Setenv("INTERPOLATE_TEST_ENV_3", "/path/to/nowhere")
-	os.Setenv("INTERPOLATE_TEST_ENV_2", "5")
-	os.Setenv("INTERPOLATE_TEST_ENV_4", "bananas")
+	t.Setenv("INTERPOLATE_TEST_ENV_1", "bulbasaur")
+	t.Setenv("INTERPOLATE_TEST_ENV_3", "/path/to/nowhere")
+	t.Setenv("INTERPOLATE_TEST_ENV_2", "5")
+	t.Setenv("INTERPOLATE_TEST_ENV_4", "bananas")
 
 	f, err := os.Open(fixtureDir("complex-recursed-env-user-var-file.json"))
 	if err != nil {
@@ -757,7 +767,7 @@ func TestEnvAndFileVars(t *testing.T) {
 			"final_var": "{{user `env_1`}}/{{user `env_2`}}/{{user `env_4`}}{{user `env_3`}}-{{user `var_1`}}/vmware/{{user `var_2`}}.vmx",
 		},
 	})
-	err = ccf.Initialize()
+	diags := ccf.Initialize(InitializeOptions{})
 
 	expected := map[string]string{
 		"var_1":     "partyparrot",
@@ -768,8 +778,8 @@ func TestEnvAndFileVars(t *testing.T) {
 		"env_3":     "/path/to/nowhere",
 		"env_4":     "bananas",
 	}
-	if err != nil {
-		t.Fatalf("err: %s\n\n%s", "complex-recursed-env-user-var-file.json", err)
+	if diags.HasErrors() {
+		t.Fatalf("err: %s\n\n%s", "complex-recursed-env-user-var-file.json", diags)
 	}
 	for k, v := range ccf.variables {
 		if expected[k] != v {
@@ -777,12 +787,6 @@ func TestEnvAndFileVars(t *testing.T) {
 				expected[k], k, v)
 		}
 	}
-
-	// Clean up env vars
-	os.Unsetenv("INTERPOLATE_TEST_ENV_1")
-	os.Unsetenv("INTERPOLATE_TEST_ENV_3")
-	os.Unsetenv("INTERPOLATE_TEST_ENV_2")
-	os.Unsetenv("INTERPOLATE_TEST_ENV_4")
 }
 
 func testCoreTemplate(t *testing.T, c *CoreConfig, p string) {
@@ -843,5 +847,93 @@ func TestCoreBuild_provRetry(t *testing.T) {
 	// backwards compatibility
 	if !pInt.ProvRetried {
 		t.Fatal("provisioner should retry for max_retries integer value")
+	}
+}
+
+func TestCoreBuild_packerVersion(t *testing.T) {
+	config := TestCoreConfig(t)
+	testCoreTemplate(t, config, fixtureDir("build-var-packer-version.json"))
+	b := TestBuilder(t, config, "test")
+	core := TestCore(t, config)
+
+	expected := version.FormattedVersion()
+	build, err := core.Build("test")
+	if err != nil {
+		t.Fatalf("err: %s", err)
+	}
+
+	if _, err := build.Prepare(); err != nil {
+		t.Fatalf("err: %s", err)
+	}
+	// Interpolate the config
+	var result map[string]interface{}
+	err = configHelper.Decode(&result, nil, b.PrepareConfig...)
+	if err != nil {
+		t.Fatalf("err: %s", err)
+	}
+
+	if result["value"] != expected {
+		t.Fatalf("bad: %#v", result)
+	}
+}
+
+func TestCoreBuild_buildNameIntepolation(t *testing.T) {
+	config := TestCoreConfig(t)
+	cases := []struct {
+		File                       string
+		InterpolatedName, Expected string
+		Vars                       map[string]string
+	}{
+		{
+			File:             "build-interpolated-name.json",
+			InterpolatedName: "mybuild-RandomToken",
+			Expected:         "test.mybuild-RandomToken",
+			Vars: map[string]string{
+				"build_name": "mybuild-RandomToken",
+			},
+		},
+		{
+			File:             "build-interpolated-name.json",
+			InterpolatedName: "build-vardata",
+			Expected:         "test.build-vardata",
+			Vars: map[string]string{
+				"build_name": "build-vardata",
+			},
+		},
+		{
+			File:             "build-interpolated-name.json",
+			InterpolatedName: "build-12345",
+			Expected:         "test.build-12345",
+			Vars: map[string]string{
+				"something":  "build-12345",
+				"build_name": "{{user `something`}}",
+			},
+		},
+		{
+			// When no name attribute is provided in the config the builder type is the default name.
+			File:             "build-basic.json",
+			InterpolatedName: "test",
+			Expected:         "test",
+		},
+	}
+
+	for _, tc := range cases {
+		config.Variables = tc.Vars
+		testCoreTemplate(t, config, fixtureDir(tc.File))
+		core := TestCore(t, config)
+		diags := core.Initialize(InitializeOptions{})
+		if diags.HasErrors() {
+			t.Fatalf("err: %s\n\n%s", tc.File, diags)
+		}
+
+		build, err := core.Build(tc.InterpolatedName)
+		if err != nil {
+			t.Fatalf("err for InterpolatedName(%q): %s", tc.InterpolatedName, err)
+		}
+
+		if build.Name() != tc.Expected {
+			t.Errorf("build type interpolation failed; expected %q, got %q", tc.Expected, build.Name())
+		}
+
 	}
 }

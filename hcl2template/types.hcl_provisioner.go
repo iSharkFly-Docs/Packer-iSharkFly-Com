@@ -1,3 +1,6 @@
+// Copyright IBM Corp. 2024, 2026
+// SPDX-License-Identifier: BUSL-1.1
+
 package hcl2template
 
 import (
@@ -18,7 +21,7 @@ type HCL2Provisioner struct {
 	Provisioner      packersdk.Provisioner
 	provisionerBlock *ProvisionerBlock
 	evalContext      *hcl.EvalContext
-	builderVariables map[string]string
+	builderVariables map[string]interface{}
 	override         map[string]interface{}
 }
 
@@ -33,7 +36,9 @@ func (p *HCL2Provisioner) HCL2Prepare(buildVars map[string]interface{}) error {
 		ectx = p.evalContext.NewChild()
 		buildValues := map[string]cty.Value{}
 		if !p.evalContext.Variables[buildAccessor].IsNull() {
-			buildValues = p.evalContext.Variables[buildAccessor].AsValueMap()
+			for k, v := range p.evalContext.Variables[buildAccessor].AsValueMap() {
+				buildValues[k] = v
+			}
 		}
 		for k, v := range buildVars {
 			val, err := ConvertPluginConfigValueToHCLValue(v)

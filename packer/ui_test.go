@@ -1,8 +1,12 @@
+// Copyright IBM Corp. 2024, 2026
+// SPDX-License-Identifier: BUSL-1.1
+
 package packer
 
 import (
 	"bytes"
-	"os"
+	"io"
+	"log"
 	"strings"
 	"testing"
 
@@ -65,7 +69,7 @@ func TestColoredUi(t *testing.T) {
 
 	ui.Message("foo")
 	result = readWriter(bufferUi)
-	if result != "\033[0;33mfoo\033[0m\n" {
+	if result != "\033[1;33mfoo\033[0m\n" {
 		t.Fatalf("invalid output: %s", result)
 	}
 
@@ -86,9 +90,7 @@ func TestColoredUi_noColorEnv(t *testing.T) {
 	ui := &ColoredUi{UiColorYellow, UiColorRed, bufferUi, &UiProgressBar{}}
 
 	// Set the env var to get rid of the color
-	oldenv := os.Getenv("PACKER_NO_COLOR")
-	os.Setenv("PACKER_NO_COLOR", "1")
-	defer os.Setenv("PACKER_NO_COLOR", oldenv)
+	t.Setenv("PACKER_NO_COLOR", "1")
 
 	ui.Say("foo")
 	result := readWriter(bufferUi)
@@ -126,7 +128,7 @@ func TestTargetedUI(t *testing.T) {
 
 	targetedUi.Message("foo")
 	actual = readWriter(bufferUi)
-	expected = "    foo: foo\n"
+	expected = "==> foo: foo\n"
 	if actual != expected {
 		t.Fatalf("bad: %#v", actual)
 	}
@@ -143,6 +145,27 @@ func TestTargetedUI(t *testing.T) {
 	expected = "==> foo: foo\n==> foo: bar\n"
 	if actual != expected {
 		t.Fatalf("bad: %#v", actual)
+	}
+}
+
+func TestTargetedUI_ScrubsMultilineSecrets(t *testing.T) {
+	bufferUi := testUi()
+	targetedUi := &TargetedUI{
+		Target: "null.example",
+		Ui:     bufferUi,
+	}
+
+	secret := "line-one-secret\nline-two-secret\nline-three-secret"
+	packersdk.LogSecretFilter.Set(secret)
+
+	targetedUi.Say("BEGIN\n" + secret + "\nEND")
+	actual := readWriter(bufferUi)
+
+	if strings.Contains(actual, secret) {
+		t.Fatalf("secret leaked in output: %q", actual)
+	}
+	if !strings.Contains(actual, "==> null.example: <sensitive>") {
+		t.Fatalf("expected scrubbed output, got: %q", actual)
 	}
 }
 
@@ -296,5 +319,46 @@ func TestMachineReadableUi(t *testing.T) {
 	expected = ",foo,foo\\n\n"
 	if data != expected {
 		t.Fatalf("bad: %#v", data)
+	}
+
+	buf.Reset()
+	secret := "line-one-secret\nline-two-secret\nline-three-secret"
+	packersdk.LogSecretFilter.Set(secret)
+	ui.Machine("foo", secret)
+	data = buf.String()
+	if strings.Contains(data, "line-one-secret") {
+		t.Fatalf("secret leaked in machine-readable output: %q", data)
+	}
+	if !strings.Contains(data, "<sensitive>") {
+		t.Fatalf("expected scrubbed machine-readable output, got: %q", data)
+	}
+}
+
+func TestLoggerScrubsCombinedMultilineSecrets(t *testing.T) {
+	secret := "line-one-secret\nline-two-secret\nline-three-secret"
+	RegisterSecret(secret)
+
+	buf := new(bytes.Buffer)
+	packersdk.LogSecretFilter.SetOutput(buf)
+
+	oldWriter := log.Writer()
+	oldFlags := log.Flags()
+	defer log.SetOutput(oldWriter)
+	defer log.SetFlags(oldFlags)
+	defer packersdk.LogSecretFilter.SetOutput(io.Discard)
+
+	log.SetFlags(0)
+	log.SetOutput(&packersdk.LogSecretFilter)
+	log.Print("BEGIN\n" + secret + "\nEND")
+
+	output := buf.String()
+	if strings.Contains(output, secret) {
+		t.Fatalf("combined multiline secret leaked to logger output: %q", output)
+	}
+	if strings.Contains(output, "line-one-secret") {
+		t.Fatalf("multiline secret line leaked to logger output: %q", output)
+	}
+	if !strings.Contains(output, "<sensitive>") {
+		t.Fatalf("expected scrubbed logger output, got: %q", output)
 	}
 }

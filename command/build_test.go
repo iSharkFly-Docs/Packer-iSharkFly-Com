@@ -1,27 +1,20 @@
+// Copyright IBM Corp. 2024, 2026
+// SPDX-License-Identifier: BUSL-1.1
+
 package command
 
 import (
-	"bytes"
 	"fmt"
-	"io/ioutil"
 	"math"
 	"os"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/hashicorp/go-uuid"
-	packersdk "github.com/hashicorp/packer-plugin-sdk/packer"
-	"github.com/hashicorp/packer/builder/file"
-	"github.com/hashicorp/packer/builder/null"
-	"github.com/hashicorp/packer/packer"
-	"github.com/hashicorp/packer/post-processor/manifest"
-	shell_local_pp "github.com/hashicorp/packer/post-processor/shell-local"
-	filep "github.com/hashicorp/packer/provisioner/file"
-	"github.com/hashicorp/packer/provisioner/shell"
-	shell_local "github.com/hashicorp/packer/provisioner/shell-local"
 )
 
 var (
@@ -38,6 +31,8 @@ mascarpone
 whipped_egg_white
 dress
 `
+	one = "1\n"
+	two = "2\n"
 )
 
 func TestBuild(t *testing.T) {
@@ -75,7 +70,7 @@ func TestBuild(t *testing.T) {
 		},
 
 		{
-			name: "var-args: json - inexistent var file errs",
+			name: "var-args: json - nonexistent var file errs",
 			args: []string{
 				"-var-file=" + filepath.Join(testFixture("var-arg"), "potato.json"),
 				filepath.Join(testFixture("var-arg"), "fruit_builder.json"),
@@ -85,7 +80,7 @@ func TestBuild(t *testing.T) {
 		},
 
 		{
-			name: "var-args: hcl - inexistent json var file errs",
+			name: "var-args: hcl - nonexistent json var file errs",
 			args: []string{
 				"-var-file=" + filepath.Join(testFixture("var-arg"), "potato.json"),
 				testFixture("var-arg"),
@@ -95,7 +90,7 @@ func TestBuild(t *testing.T) {
 		},
 
 		{
-			name: "var-args: hcl - inexistent hcl var file errs",
+			name: "var-args: hcl - nonexistent hcl var file errs",
 			args: []string{
 				"-var-file=" + filepath.Join(testFixture("var-arg"), "potato.hcl"),
 				testFixture("var-arg"),
@@ -110,6 +105,21 @@ func TestBuild(t *testing.T) {
 				testFixture("var-arg"),
 			},
 			fileCheck: fileCheck{expected: []string{"chocolate.txt"}},
+		},
+		{
+			name: "var-args: json - auto varfile sets a peanut env var",
+			args: []string{
+				testFixture("var-arg", "var-arg-test-autovar-json"),
+			},
+			fileCheck: fileCheck{expected: []string{"peanut.txt"}},
+		},
+
+		{
+			name: "var-args: hcl - auto varfile and json -auto varfile sets the value in json auto varfile",
+			args: []string{
+				testFixture("var-arg", "var-arg-tests"),
+			},
+			fileCheck: fileCheck{expected: []string{"peanut.txt"}},
 		},
 
 		{
@@ -128,6 +138,24 @@ func TestBuild(t *testing.T) {
 				testFixture("var-arg"),
 			},
 			fileCheck: fileCheck{expected: []string{"apple.txt"}},
+		},
+		{
+			name: "var-args: banana json var file then hcl var file sets apple env var",
+			args: []string{
+				"-var-file=" + filepath.Join(testFixture("var-arg"), "banana.json"),
+				"-var-file=" + filepath.Join(testFixture("var-arg"), "apple.hcl"),
+				testFixture("var-arg"),
+			},
+			fileCheck: fileCheck{expected: []string{"apple.txt"}},
+		},
+		{
+			name: "var-args:  apple hcl var file then banana json var file sets banana env var",
+			args: []string{
+				"-var-file=" + filepath.Join(testFixture("var-arg"), "apple.hcl"),
+				"-var-file=" + filepath.Join(testFixture("var-arg"), "banana.json"),
+				testFixture("var-arg"),
+			},
+			fileCheck: fileCheck{expected: []string{"banana.txt"}},
 		},
 
 		{
@@ -396,11 +424,103 @@ func TestBuild(t *testing.T) {
 				expected: []string{"dummy-fooo.txt", "dummy-baar.txt", "postgres/13-fooo.txt", "postgres/13-baar.txt"},
 			},
 		},
+
+		{
+			name: "hcl - variables can be used in shared post-processor fields",
+			args: []string{
+				testFixture("hcl", "var-in-pp-name.pkr.hcl"),
+			},
+			fileCheck: fileCheck{
+				expectedContent: map[string]string{
+					"example1.1.txt": one,
+					"example2.2.txt": two,
+				},
+				notExpected: []string{
+					"example1.2.txt",
+					"example2.1.txt",
+				},
+			},
+		},
+		{
+			name: "hcl - using build variables in post-processor",
+			args: []string{
+				testFixture("hcl", "build-var-in-pp.pkr.hcl"),
+			},
+			fileCheck: fileCheck{
+				expectedContent: map[string]string{
+					"example.2.txt": two,
+				},
+			},
+		},
+
+		{
+			name: "hcl - test crash #11381",
+			args: []string{
+				testFixture("hcl", "nil-component-crash.pkr.hcl"),
+			},
+			expectedCode: 1,
+		},
+		{
+			name: "hcl - using variables in build block",
+			args: []string{
+				testFixture("hcl", "vars-in-build-block.pkr.hcl"),
+			},
+			fileCheck: fileCheck{
+				expectedContent: map[string]string{
+					"example.2.txt": two,
+				},
+			},
+		},
+		{
+			name: "hcl - recursive local using input var",
+			args: []string{
+				testFixture("hcl", "recursive_local_with_input"),
+			},
+			fileCheck: fileCheck{
+				expectedContent: map[string]string{
+					"hey.txt": "hello",
+				},
+			},
+		},
+		{
+			name: "hcl - recursive local using an unset input var",
+			args: []string{
+				testFixture("hcl", "recursive_local_with_unset_input"),
+			},
+			fileCheck:    fileCheck{},
+			expectedCode: 1,
+		},
+		{
+			name: "hcl - var with default value empty object/list can be set",
+			args: []string{
+				testFixture("hcl", "empty_object"),
+			},
+			fileCheck: fileCheck{
+				expectedContent: map[string]string{
+					"foo.txt": "yo",
+				},
+			},
+		},
+		{
+			name: "hcl - unknown ",
+			args: []string{
+				testFixture("hcl", "data-source-validation.pkr.hcl"),
+			},
+			fileCheck: fileCheck{
+				expectedContent: map[string]string{
+					"foo.txt": "foo",
+				},
+				expected: []string{
+					"s3cr3t",
+				},
+			},
+		},
 	}
 
 	for _, tt := range tc {
 		t.Run(tt.name, func(t *testing.T) {
 			defer tt.cleanup(t)
+			t.Logf("Running build on %s", tt.args)
 			run(t, tt.args, tt.expectedCode)
 			tt.fileCheck.verify(t, "")
 		})
@@ -465,7 +585,7 @@ func Test_build_output(t *testing.T) {
 
 func TestBuildOnlyFileCommaFlags(t *testing.T) {
 	c := &BuildCommand{
-		Meta: testMetaFile(t),
+		Meta: TestMetaFile(t),
 	}
 
 	args := []string{
@@ -498,7 +618,7 @@ func TestBuildOnlyFileCommaFlags(t *testing.T) {
 
 func TestBuildStdin(t *testing.T) {
 	c := &BuildCommand{
-		Meta: testMetaFile(t),
+		Meta: TestMetaFile(t),
 	}
 	f, err := os.Open(filepath.Join(testFixture("build-only"), "template.json"))
 	if err != nil {
@@ -525,7 +645,7 @@ func TestBuildStdin(t *testing.T) {
 
 func TestBuildOnlyFileMultipleFlags(t *testing.T) {
 	c := &BuildCommand{
-		Meta: testMetaFile(t),
+		Meta: TestMetaFile(t),
 	}
 
 	args := []string{
@@ -559,7 +679,7 @@ func TestBuildOnlyFileMultipleFlags(t *testing.T) {
 
 func TestBuildProvisionAndPosProcessWithBuildVariablesSharing(t *testing.T) {
 	c := &BuildCommand{
-		Meta: testMetaFile(t),
+		Meta: TestMetaFile(t),
 	}
 
 	args := []string{
@@ -586,7 +706,7 @@ func TestBuildProvisionAndPosProcessWithBuildVariablesSharing(t *testing.T) {
 
 func TestBuildEverything(t *testing.T) {
 	c := &BuildCommand{
-		Meta: testMetaFile(t),
+		Meta: TestMetaFile(t),
 	}
 
 	args := []string{
@@ -611,7 +731,7 @@ func TestBuildEverything(t *testing.T) {
 
 func TestBuildExceptFileCommaFlags(t *testing.T) {
 	c := &BuildCommand{
-		Meta: testMetaFile(t),
+		Meta: TestMetaFile(t),
 	}
 	tc := []struct {
 		name                     string
@@ -682,9 +802,9 @@ func TestBuildExceptFileCommaFlags(t *testing.T) {
 	}
 }
 
-func testHCLOnlyExceptFlags(t *testing.T, args, present, notPresent []string) {
+func testHCLOnlyExceptFlags(t *testing.T, args, present, notPresent []string, expectReturn int) {
 	c := &BuildCommand{
-		Meta: testMetaFile(t),
+		Meta: TestMetaFile(t),
 	}
 
 	defer cleanup()
@@ -693,7 +813,7 @@ func testHCLOnlyExceptFlags(t *testing.T, args, present, notPresent []string) {
 	finalArgs = append(finalArgs, args...)
 	finalArgs = append(finalArgs, testFixture("hcl-only-except"))
 
-	if code := c.Run(finalArgs); code != 0 {
+	if code := c.Run(finalArgs); code != expectReturn {
 		fatalCommand(t, c.Meta)
 	}
 
@@ -714,8 +834,7 @@ func TestHCL2PostProcessorForceFlag(t *testing.T) {
 
 	UUID, _ := uuid.GenerateUUID()
 	// Manifest will only clean with force if the build's PACKER_RUN_UUID are different
-	os.Setenv("PACKER_RUN_UUID", UUID)
-	defer os.Unsetenv("PACKER_RUN_UUID")
+	t.Setenv("PACKER_RUN_UUID", UUID)
 
 	args := []string{
 		filepath.Join(testFixture("hcl"), "force.pkr.hcl"),
@@ -740,7 +859,7 @@ func TestHCL2PostProcessorForceFlag(t *testing.T) {
 	defer fCheck.cleanup(t)
 
 	c := &BuildCommand{
-		Meta: testMetaFile(t),
+		Meta: TestMetaFile(t),
 	}
 	if code := c.Run(args); code != 0 {
 		fatalCommand(t, c.Meta)
@@ -749,7 +868,7 @@ func TestHCL2PostProcessorForceFlag(t *testing.T) {
 
 	// Second build should override previous manifest
 	UUID, _ = uuid.GenerateUUID()
-	os.Setenv("PACKER_RUN_UUID", UUID)
+	t.Setenv("PACKER_RUN_UUID", UUID)
 
 	args = []string{
 		"-force",
@@ -774,7 +893,7 @@ func TestHCL2PostProcessorForceFlag(t *testing.T) {
 	}
 
 	c = &BuildCommand{
-		Meta: testMetaFile(t),
+		Meta: TestMetaFile(t),
 	}
 	if code := c.Run(args); code != 0 {
 		fatalCommand(t, c.Meta)
@@ -784,67 +903,77 @@ func TestHCL2PostProcessorForceFlag(t *testing.T) {
 
 func TestBuildCommand_HCLOnlyExceptOptions(t *testing.T) {
 	tests := []struct {
-		args       []string
-		present    []string
-		notPresent []string
+		args         []string
+		present      []string
+		notPresent   []string
+		expectReturn int
 	}{
 		{
 			[]string{"-only=chocolate"},
 			[]string{},
 			[]string{"chocolate.txt", "vanilla.txt", "cherry.txt"},
+			1,
 		},
 		{
 			[]string{"-only=*chocolate*"},
 			[]string{"chocolate.txt"},
 			[]string{"vanilla.txt", "cherry.txt"},
+			0,
 		},
 		{
 			[]string{"-except=*chocolate*"},
 			[]string{"vanilla.txt", "cherry.txt"},
 			[]string{"chocolate.txt"},
+			0,
 		},
 		{
 			[]string{"-except=*ch*"},
 			[]string{"vanilla.txt"},
 			[]string{"chocolate.txt", "cherry.txt"},
+			0,
 		},
 		{
 			[]string{"-only=*chocolate*", "-only=*vanilla*"},
 			[]string{"chocolate.txt", "vanilla.txt"},
 			[]string{"cherry.txt"},
+			0,
 		},
 		{
 			[]string{"-except=*chocolate*", "-except=*vanilla*"},
 			[]string{"cherry.txt"},
 			[]string{"chocolate.txt", "vanilla.txt"},
+			0,
 		},
 		{
 			[]string{"-only=my_build.file.chocolate"},
 			[]string{"chocolate.txt"},
 			[]string{"vanilla.txt", "cherry.txt"},
+			0,
 		},
 		{
 			[]string{"-except=my_build.file.chocolate"},
 			[]string{"vanilla.txt", "cherry.txt"},
 			[]string{"chocolate.txt"},
+			0,
 		},
 		{
 			[]string{"-only=file.cherry"},
 			[]string{"cherry.txt"},
 			[]string{"vanilla.txt", "chocolate.txt"},
+			0,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(fmt.Sprintf("%s", tt.args), func(t *testing.T) {
-			testHCLOnlyExceptFlags(t, tt.args, tt.present, tt.notPresent)
+			testHCLOnlyExceptFlags(t, tt.args, tt.present, tt.notPresent, tt.expectReturn)
 		})
 	}
 }
 
 func TestBuildWithNonExistingBuilder(t *testing.T) {
 	c := &BuildCommand{
-		Meta: testMetaFile(t),
+		Meta: TestMetaFile(t),
 	}
 
 	args := []string{
@@ -870,7 +999,7 @@ func run(t *testing.T, args []string, expectedCode int) {
 	t.Helper()
 
 	c := &BuildCommand{
-		Meta: testMetaFile(t),
+		Meta: TestMetaFile(t),
 	}
 
 	if code := c.Run(args); code != expectedCode {
@@ -912,53 +1041,13 @@ func (fc fileCheck) verify(t *testing.T, dir string) {
 		}
 	}
 	for file, expectedContent := range fc.expectedContent {
-		content, err := ioutil.ReadFile(filepath.Join(dir, file))
+		content, err := os.ReadFile(filepath.Join(dir, file))
 		if err != nil {
-			t.Fatalf("ioutil.ReadFile: %v", err)
+			t.Fatalf("os.ReadFile: %v", err)
 		}
 		if diff := cmp.Diff(expectedContent, string(content)); diff != "" {
 			t.Errorf("content of %s differs: %s", file, diff)
 		}
-	}
-}
-
-// testCoreConfigBuilder creates a packer CoreConfig that has a file builder
-// available. This allows us to test a builder that writes files to disk.
-func testCoreConfigBuilder(t *testing.T) *packer.CoreConfig {
-	components := packer.ComponentFinder{
-		PluginConfig: &packer.PluginConfig{
-			Builders: packer.MapOfBuilder{
-				"file": func() (packersdk.Builder, error) { return &file.Builder{}, nil },
-				"null": func() (packersdk.Builder, error) { return &null.Builder{}, nil },
-			},
-			Provisioners: packer.MapOfProvisioner{
-				"shell-local": func() (packersdk.Provisioner, error) { return &shell_local.Provisioner{}, nil },
-				"shell":       func() (packersdk.Provisioner, error) { return &shell.Provisioner{}, nil },
-				"file":        func() (packersdk.Provisioner, error) { return &filep.Provisioner{}, nil },
-			},
-			PostProcessors: packer.MapOfPostProcessor{
-				"shell-local": func() (packersdk.PostProcessor, error) { return &shell_local_pp.PostProcessor{}, nil },
-				"manifest":    func() (packersdk.PostProcessor, error) { return &manifest.PostProcessor{}, nil },
-			},
-			DataSources: packer.MapOfDatasource{
-				"mock": func() (packersdk.Datasource, error) { return &packersdk.MockDatasource{}, nil },
-			},
-		},
-	}
-	return &packer.CoreConfig{
-		Components: components,
-	}
-}
-
-// testMetaFile creates a Meta object that includes a file builder
-func testMetaFile(t *testing.T) Meta {
-	var out, err bytes.Buffer
-	return Meta{
-		CoreConfig: testCoreConfigBuilder(t),
-		Ui: &packersdk.BasicUi{
-			Writer:      &out,
-			ErrorWriter: &err,
-		},
 	}
 }
 
@@ -984,7 +1073,7 @@ func cleanup(moreFiles ...string) {
 }
 
 func TestBuildCommand_ParseArgs(t *testing.T) {
-	defaultMeta := testMetaFile(t)
+	defaultMeta := TestMetaFile(t)
 	type fields struct {
 		Meta Meta
 	}
@@ -1042,6 +1131,16 @@ func TestBuildCommand_ParseArgs(t *testing.T) {
 			},
 			0,
 		},
+		{fields{defaultMeta},
+			args{[]string{"-skip-enforcement", "file.json"}},
+			&BuildArgs{
+				MetaArgs:        MetaArgs{Path: "file.json"},
+				ParallelBuilds:  math.MaxInt64,
+				Color:           true,
+				SkipEnforcement: true,
+			},
+			0,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(fmt.Sprintf("%s", tt.args.args), func(t *testing.T) {
@@ -1054,6 +1153,266 @@ func TestBuildCommand_ParseArgs(t *testing.T) {
 			}
 			if gotExitCode != tt.wantExitCode {
 				t.Fatalf("BuildCommand.ParseArgs() gotExitCode = %v, want %v", gotExitCode, tt.wantExitCode)
+			}
+		})
+	}
+}
+
+// TestProvisionerOnlyExcept checks that only/except blocks in provisioners/post-processors behave as expected
+func TestProvisionerAndPostProcessorOnlyExcept(t *testing.T) {
+	tests := []struct {
+		name         string
+		args         []string
+		expectedCode int
+		outputCheck  func(string, string) error
+	}{
+		{
+			"json - only named build",
+			[]string{
+				"-only", "packer",
+				testFixture("provisioners", "provisioner-only-except.json"),
+			},
+			0,
+			func(out, _ string) error {
+				if !strings.Contains(out, "packer provisioner packer and null") {
+					return fmt.Errorf("missing expected provisioner output")
+				}
+
+				if !strings.Contains(out, "packer post-processor packer and null") {
+					return fmt.Errorf("missing expected post-processor output")
+				}
+
+				if strings.Contains(out, "null post-processor") || strings.Contains(out, "null provisioner") {
+					return fmt.Errorf("found traces of unnamed provisioner/post-processor, should not")
+				}
+
+				return nil
+			},
+		},
+		{
+			"json - only unnamed build",
+			[]string{
+				"-only", "null",
+				testFixture("provisioners", "provisioner-only-except.json"),
+			},
+			0,
+			func(out, _ string) error {
+				if !strings.Contains(out, "null provisioner null and null") {
+					return fmt.Errorf("missing expected provisioner output")
+				}
+
+				if !strings.Contains(out, "null post-processor null and null") {
+					return fmt.Errorf("missing expected post-processor output")
+				}
+
+				if strings.Contains(out, "packer post-processor") || strings.Contains(out, "packer provisioner") {
+					return fmt.Errorf("found traces of named provisioner/post-processor, should not")
+				}
+
+				return nil
+			},
+		},
+		{
+			"hcl - only one source build",
+			[]string{
+				"-only", "null.packer",
+				testFixture("provisioners", "provisioner-only-except.pkr.hcl"),
+			},
+			0,
+			func(out, _ string) error {
+				if !strings.Contains(out, "packer provisioner packer and null") {
+					return fmt.Errorf("missing expected provisioner output")
+				}
+
+				if !strings.Contains(out, "packer post-processor packer and null") {
+					return fmt.Errorf("missing expected post-processor output")
+				}
+
+				if strings.Contains(out, "other post-processor") || strings.Contains(out, "other provisioner") {
+					return fmt.Errorf("found traces of other provisioner/post-processor, should not")
+				}
+
+				return nil
+			},
+		},
+		{
+			"hcl - only other build",
+			[]string{
+				"-only", "null.other",
+				testFixture("provisioners", "provisioner-only-except.pkr.hcl"),
+			},
+			0,
+			func(out, _ string) error {
+				if !strings.Contains(out, "other provisioner other and null") {
+					return fmt.Errorf("missing expected provisioner output")
+				}
+
+				if !strings.Contains(out, "other post-processor other and null") {
+					return fmt.Errorf("missing expected post-processor output")
+				}
+
+				if strings.Contains(out, "packer post-processor") || strings.Contains(out, "packer provisioner") {
+					return fmt.Errorf("found traces of \"packer\" source provisioner/post-processor, should not")
+				}
+
+				return nil
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c := &BuildCommand{
+				Meta: TestMetaFile(t),
+			}
+
+			exitCode := c.Run(tt.args)
+			if exitCode != tt.expectedCode {
+				t.Errorf("process exit code mismatch: expected %d, got %d",
+					tt.expectedCode,
+					exitCode)
+			}
+
+			out, stderr := GetStdoutAndErrFromTestMeta(t, c.Meta)
+			err := tt.outputCheck(out, stderr)
+			if err != nil {
+				if len(out) != 0 {
+					t.Logf("command stdout: %q", out)
+				}
+
+				if len(stderr) != 0 {
+					t.Logf("command stderr: %q", stderr)
+				}
+				t.Error(err.Error())
+			}
+		})
+	}
+}
+
+// TestBuildCmd aims to test the build command, with output validation
+func TestBuildCmd(t *testing.T) {
+	tests := []struct {
+		name         string
+		args         []string
+		expectedCode int
+		outputCheck  func(string, string) error
+	}{
+		{
+			name: "hcl - no build block error",
+			args: []string{
+				testFixture("hcl", "no_build.pkr.hcl"),
+			},
+			expectedCode: 1,
+			outputCheck: func(_, err string) error {
+				if !strings.Contains(err, "Error: Missing build block") {
+					return fmt.Errorf("expected 'Error: Missing build block' in output, did not find it")
+				}
+
+				nbErrs := strings.Count(err, "Error: ")
+				if nbErrs != 1 {
+					return fmt.Errorf(
+						"error: too many errors in stdout for build block, expected 1, got %d",
+						nbErrs)
+				}
+
+				return nil
+			},
+		},
+		{
+			name: "hcl - undefined var set in pkrvars",
+			args: []string{
+				testFixture("hcl", "variables", "ref_non_existing"),
+			},
+			expectedCode: 0,
+			outputCheck: func(out, err string) error {
+				nbWarns := strings.Count(out, "Warning: ")
+				if nbWarns != 0 {
+					return fmt.Errorf(
+						"error: too many warnings in build output, expected 0, got %d",
+						nbWarns)
+				}
+
+				nbErrs := strings.Count(err, "Error: ")
+				if nbErrs != 0 {
+					return fmt.Errorf("error: expected build to succeed without errors, got %d",
+						nbErrs)
+				}
+				return nil
+			},
+		},
+		{
+			name: "hcl - build block without source",
+			args: []string{
+				testFixture("hcl", "build_no_source.pkr.hcl"),
+			},
+			expectedCode: 1,
+			outputCheck: func(_, err string) error {
+				if !strings.Contains(err, "Error: missing source reference") {
+					return fmt.Errorf("expected 'Error: missing source reference' in output, did not find it")
+				}
+
+				nbErrs := strings.Count(err, "Error: ")
+				if nbErrs != 1 {
+					return fmt.Errorf(
+						"error: too many errors in stderr for build, expected 1, got %d",
+						nbErrs)
+				}
+
+				logRegex := regexp.MustCompile("on.*build_no_source.pkr.hcl line 1")
+				if !logRegex.MatchString(err) {
+					return fmt.Errorf("error: missing context for error message")
+				}
+
+				return nil
+			},
+		},
+		{
+			name: "hcl - exclude post-processor, expect no warning",
+			args: []string{
+				"-except", "manifest",
+				testFixture("hcl", "test_except_manifest.pkr.hcl"),
+			},
+			expectedCode: 0,
+			outputCheck: func(out, err string) error {
+				for _, stream := range []string{out, err} {
+					if strings.Contains(stream, "Warning: an 'except' option was passed, but did not match any build") {
+						return fmt.Errorf("Unexpected warning for build no match with except")
+					}
+
+					if strings.Contains(stream, "Running post-processor:") {
+						return fmt.Errorf("Should not run post-processors, but found one")
+					}
+				}
+
+				return nil
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c := &BuildCommand{
+				Meta: TestMetaFile(t),
+			}
+
+			exitCode := c.Run(tt.args)
+			if exitCode != tt.expectedCode {
+				t.Errorf("process exit code mismatch: expected %d, got %d",
+					tt.expectedCode,
+					exitCode)
+			}
+
+			out, stderr := GetStdoutAndErrFromTestMeta(t, c.Meta)
+			err := tt.outputCheck(out, stderr)
+			if err != nil {
+				if len(out) != 0 {
+					t.Logf("command stdout: %q", out)
+				}
+
+				if len(stderr) != 0 {
+					t.Logf("command stderr: %q", stderr)
+				}
+				t.Error(err.Error())
 			}
 		})
 	}

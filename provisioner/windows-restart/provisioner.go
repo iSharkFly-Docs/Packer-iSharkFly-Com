@@ -1,3 +1,6 @@
+// Copyright IBM Corp. 2024, 2026
+// SPDX-License-Identifier: BUSL-1.1
+
 //go:generate packer-sdc mapstructure-to-hcl2 -type Config
 
 package restart
@@ -40,8 +43,9 @@ type Config struct {
 	// The command used to restart the guest machine
 	RestartCommand string `mapstructure:"restart_command"`
 
-	// The command used to check if the guest machine has restarted
-	// The output of this command will be displayed to the user
+	// The command to run after executing `restart_command` to check if the guest machine has restarted.
+	// This command will retry until the connection to the guest machine has been restored or `restart_timeout` has exceeded.
+	// The output of this command will be displayed to the user.
 	RestartCheckCommand string `mapstructure:"restart_check_command"`
 
 	// The timeout for waiting for the machine to restart
@@ -161,7 +165,10 @@ var waitForRestart = func(ctx context.Context, p *Provisioner, comm packersdk.Co
 		if cmd.ExitStatus() == 0 {
 			// Cancel reboot we created to test if machine was already rebooting
 			cmd = &packersdk.RemoteCmd{Command: abortcommand}
-			cmd.RunWithUi(ctx, comm, ui)
+			err = cmd.RunWithUi(ctx, comm, ui)
+			if err != nil {
+				log.Printf("[ERROR] failed to run remote shutdown command: %s, build will likely hang.", err)
+			}
 			break
 		}
 	}
@@ -245,7 +252,11 @@ var waitForCommunicator = func(ctx context.Context, p *Provisioner) error {
 		cmdModuleLoad.Stdout = &buf
 		cmdModuleLoad.Stdout = io.MultiWriter(cmdModuleLoad.Stdout, &buf2)
 
-		cmdModuleLoad.RunWithUi(ctx, p.comm, p.ui)
+		err := cmdModuleLoad.RunWithUi(ctx, p.comm, p.ui)
+		if err != nil {
+			log.Printf("[ERROR] failed to run restart command on guest: %s. Build may hang.", err)
+		}
+
 		stdoutToRead := buf2.String()
 
 		if !strings.Contains(stdoutToRead, "restarted.") {

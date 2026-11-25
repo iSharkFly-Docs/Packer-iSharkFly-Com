@@ -11,10 +11,10 @@ contribute to the project, read on. This document will cover what we're looking
 for. By addressing all the points we're looking for, it raises the chances we
 can quickly merge or address your contributions.
 
-When contributing in any way to the Packer project (new issue, PR, etc), please 
-be aware that our team identifies with many gender pronouns. Please remember to 
-use nonbinary pronouns (they/them) and gender neutral language ("Hello folks") 
-when addressing our team. For more reading on our code of conduct, please see the 
+When contributing in any way to the Packer project (new issue, PR, etc), please
+be aware that our team identifies with many gender pronouns. Please remember to
+use nonbinary pronouns (they/them) and gender neutral language ("Hello folks")
+when addressing our team. For more reading on our code of conduct, please see the
 [HashiCorp community guidelines](https://www.hashicorp.com/community-guidelines).
 
 ## Issues
@@ -53,17 +53,15 @@ when addressing our team. For more reading on our code of conduct, please see th
    linked.
 
 5. Sometimes, if you have a specialized environment or use case, the maintainers
-   may ask for your help testing the patch. You are able to download an
+   may ask for your help to test the patch. You are able to download an
    experimental binary of Packer containing the Pull Request's patch via from
-   the Pull Request page on github. You can do this by scrolling to the
-   "checks" section on github, and clicking "details" on the
+   the Pull Request page on GitHub. You can do this by scrolling to the
+   "checks" section on GitHub, and clicking "details" on the
    "store_artifacts" check. This will take you to Packer's Circle CI page for
    the build, and you will be able to click a tab named "Artifacts" which will
    contain zipped Packer binaries for each major OS architecture.
 
 6. The issue is closed.
-
-
 
 ## Setting up Go
 
@@ -72,18 +70,19 @@ runtime in order to build packer.
 
 1. This project always releases from the latest version of golang.
 [Install go](https://golang.org/doc/install#install) To properly build from
-source, you need to have golang >= v1.16
+source, you need to have golang >= v1.20
 
 ## Setting up Packer for dev
 
-If/when you have go installed you can already `go get` packer and `make` in
+If/when you have go installed you can already clone packer and `make` in
 order to compile and test Packer. These instructions target
 POSIX-like environments (macOS, Linux, Cygwin, etc.) so you may need to
 adjust them for Windows or other shells.
 
-1. Download the Packer source (and its dependencies) by running
-   `go get github.com/hashicorp/packer`. This will download the Packer source to
-   `$GOPATH/src/github.com/hashicorp/packer`.
+
+1. Create a directory in your GOPATH for the code `mkdir -p $(go env GOPATH)/src/github.com/hashicorp && cd $_`
+and clone the packer repository from GitHub into your GOPATH `git clone https://github.com/hashicorp/packer.git`
+then change into the packer directory `cd packer`
 
 2. When working on Packer, first `cd $GOPATH/src/github.com/hashicorp/packer`
    so you can run `make` and easily access other files. Run `make help` to get
@@ -121,14 +120,14 @@ executable extension
 go build -o bin/packer.exe
 ```
 
-### Opening an Pull Request
+### Opening a Pull Request
 
 Thank you for contributing! When you are ready to open a pull-request, you will
 need to [fork
 Packer](https://github.com/hashicorp/packer#fork-destination-box), push your
 changes to your fork, and then open a pull-request.
 
-For example, my github username is `cbednarski`, so I would do the following:
+For example, my GitHub username is `cbednarski`, so I would do the following:
 
 ```
 git checkout -b f-my-feature
@@ -217,6 +216,13 @@ the back-and-forth as we make sure that we understand the changes fully. Please
 bear with us, and please know that we appreciate the time and energy you put
 into the project.
 
+### PR Checks
+
+The following checks run when a PR is opened:
+
+- Contributor License Agreement (CLA): If this is your first contribution to Packer you will be asked to sign the CLA.
+- Tests: tests include unit tests, documentation checks, and code formatting checks, and all checks must pass before a PR can be merged.
+
 #### Working on forks
 
 The easiest way to work on a fork is to set it as a remote of the Packer
@@ -266,15 +272,61 @@ does not attempt to track the latest version for each dependency.
 #### Code generation
 
 Packer relies on `go generate` to generate a [peg parser for boot
-commands](https://github.com/hashicorp/packer/blob/master/packer-plugin-sdk/bootcommand/boot_command.go),
-[docs](https://github.com/hashicorp/packer/blob/master/website/pages/partials/builder/amazon/chroot/_Config-not-required.mdx)
-and HCL2's bridging code. Packer's testing suite will run `make check-generate`
+commands](https://github.com/hashicorp/packer-plugin-sdk/blob/main/bootcommand/boot_command.go),
+[docs](https://github.com/hashicorp/packer-plugin-amazon/blob/main/docs-partials/builder/chroot/Config-not-required.mdx)
+and HCL2's bridging code. Packer's testing suite will run `make generate-check`
 to check that all the generated files Packer needs are what they should be.
 `make generate` re-generates all these file and can take a while depending on
 your machine's performances. To make it faster it is recommended to run
 localized code generation. Say you are working on the Amazon builder: running
 `go generate ./builder/amazon/...` will do that for you. Make sure that the
 latest code generation tool is installed by running `make install-gen-deps`.
+
+#### Updating Documentation
+
+**IMPORTANT:** Packer's product documentation has moved to the [`hashicorp/web-unified-docs`](https://github.com/hashicorp/web-unified-docs) repository. All documentation contributions must be made directly to that repository.
+
+##### Making Documentation Changes
+
+1. **Clone the web-unified-docs repository:**
+   ```bash
+   git clone https://github.com/hashicorp/web-unified-docs.git
+   cd web-unified-docs
+   ```
+
+2. **Make your documentation changes:**
+   - **For auto-generated partials** (e.g., configuration options): Edit the source code in your local Packer repository, then run `make generate` in `web-unified-docs` to regenerate the documentation
+   - **For all other documentation files**: Edit them directly in the `web-unified-docs` repository
+
+3. **Generate documentation** (if you've made changes to Packer code that affect auto-generated docs):
+   ```bash
+   make generate
+   ```
+
+##### Testing Documentation Changes Locally
+
+To test your documentation changes against your local Packer code:
+
+Set the following environment variables before running `make generate`:
+
+- `PACKER_REPO`: Path to your local Packer repository
+  ```bash
+  export PACKER_REPO=/path/to/your/local/packer
+  ```
+
+- `PACKER_BRANCH`: Branch name (only needed for remote repos, not local paths)
+  ```bash
+  export PACKER_BRANCH=your-feature-branch
+  ```
+
+Then run:
+```bash
+make generate
+```
+
+This will use your local Packer code to generate the documentation, allowing you to preview how your code changes will appear in the docs.
+
+For more information about the documentation structure and contribution process, refer to the README in the `web-unified-docs` repository.
 
 #### Code linting
 

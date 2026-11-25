@@ -1,0 +1,10 @@
+name: Create a release branch
+on: [workflow_dispatch]
+jobs:
+  create-branch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: hashicorp/actions-create-release-branch@v1
+        with:
+          token: ${{ secrets.ELEVATED_GITHUB_TOKEN }}

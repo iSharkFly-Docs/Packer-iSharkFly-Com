@@ -1,7 +1,9 @@
+// Copyright IBM Corp. 2024, 2026
+// SPDX-License-Identifier: BUSL-1.1
+
 package shell
 
 import (
-	"io/ioutil"
 	"os"
 	"regexp"
 	"strings"
@@ -120,7 +122,7 @@ func TestProvisionerPrepare_Script(t *testing.T) {
 	}
 
 	// Test with a good one
-	tf, err := ioutil.TempFile("", "packer")
+	tf, err := os.CreateTemp("", "packer")
 	if err != nil {
 		t.Fatalf("error tempfile: %s", err)
 	}
@@ -146,7 +148,7 @@ func TestProvisionerPrepare_ScriptAndInline(t *testing.T) {
 	}
 
 	// Test with both
-	tf, err := ioutil.TempFile("", "packer")
+	tf, err := os.CreateTemp("", "packer")
 	if err != nil {
 		t.Fatalf("error tempfile: %s", err)
 	}
@@ -165,7 +167,7 @@ func TestProvisionerPrepare_ScriptAndScripts(t *testing.T) {
 	config := testConfig()
 
 	// Test with both
-	tf, err := ioutil.TempFile("", "packer")
+	tf, err := os.CreateTemp("", "packer")
 	if err != nil {
 		t.Fatalf("error tempfile: %s", err)
 	}
@@ -191,7 +193,7 @@ func TestProvisionerPrepare_Scripts(t *testing.T) {
 	}
 
 	// Test with a good one
-	tf, err := ioutil.TempFile("", "packer")
+	tf, err := os.CreateTemp("", "packer")
 	if err != nil {
 		t.Fatalf("error tempfile: %s", err)
 	}
@@ -262,13 +264,32 @@ func TestProvisioner_createFlattenedEnvVars(t *testing.T) {
 		{"FOO=bar=baz"},        // User env var with value containing equals
 		{"FOO==bar"},           // User env var with value starting with equals
 	}
+	userEnvVarEnvmapTests := []map[string]string{
+		{},
+		{
+			"BAR": "foo",
+		},
+		{
+			"BAR": "foo's",
+		},
+		{
+			"BAR": "foo",
+			"YAR": "yaa",
+		},
+		{
+			"BAR": "foo=yar",
+		},
+		{
+			"BAR": "=foo",
+		},
+	}
 	expected := []string{
 		`PACKER_BUILDER_TYPE='iso' PACKER_BUILD_NAME='vmware' `,
-		`FOO='bar' PACKER_BUILDER_TYPE='iso' PACKER_BUILD_NAME='vmware' `,
-		`FOO='bar'"'"'s' PACKER_BUILDER_TYPE='iso' PACKER_BUILD_NAME='vmware' `,
-		`BAZ='qux' FOO='bar' PACKER_BUILDER_TYPE='iso' PACKER_BUILD_NAME='vmware' `,
-		`FOO='bar=baz' PACKER_BUILDER_TYPE='iso' PACKER_BUILD_NAME='vmware' `,
-		`FOO='=bar' PACKER_BUILDER_TYPE='iso' PACKER_BUILD_NAME='vmware' `,
+		`BAR='foo' FOO='bar' PACKER_BUILDER_TYPE='iso' PACKER_BUILD_NAME='vmware' `,
+		`BAR='foo'"'"'s' FOO='bar'"'"'s' PACKER_BUILDER_TYPE='iso' PACKER_BUILD_NAME='vmware' `,
+		`BAR='foo' BAZ='qux' FOO='bar' PACKER_BUILDER_TYPE='iso' PACKER_BUILD_NAME='vmware' YAR='yaa' `,
+		`BAR='foo=yar' FOO='bar=baz' PACKER_BUILDER_TYPE='iso' PACKER_BUILD_NAME='vmware' `,
+		`BAR='=foo' FOO='=bar' PACKER_BUILDER_TYPE='iso' PACKER_BUILD_NAME='vmware' `,
 	}
 
 	p := new(Provisioner)
@@ -281,6 +302,7 @@ func TestProvisioner_createFlattenedEnvVars(t *testing.T) {
 
 	for i, expectedValue := range expected {
 		p.config.Vars = userEnvVarTests[i]
+		p.config.Env = userEnvVarEnvmapTests[i]
 		flattenedEnvVars = p.createFlattenedEnvVars()
 		if flattenedEnvVars != expectedValue {
 			t.Fatalf("expected flattened env vars to be: %s, got %s.", expectedValue, flattenedEnvVars)
@@ -300,13 +322,32 @@ func TestProvisioner_createFlattenedEnvVars_withEnvVarFormat(t *testing.T) {
 		{"FOO=bar=baz"},        // User env var with value containing equals
 		{"FOO==bar"},           // User env var with value starting with equals
 	}
+	userEnvVarEnvmapTests := []map[string]string{
+		{},
+		{
+			"BAR": "foo",
+		},
+		{
+			"BAR": "foo's",
+		},
+		{
+			"BAR": "foo",
+			"YAR": "yaa",
+		},
+		{
+			"BAR": "foo=yar",
+		},
+		{
+			"BAR": "=foo",
+		},
+	}
 	expected := []string{
 		`PACKER_BUILDER_TYPE=iso PACKER_BUILD_NAME=vmware `,
-		`FOO=bar PACKER_BUILDER_TYPE=iso PACKER_BUILD_NAME=vmware `,
-		`FOO=bar'"'"'s PACKER_BUILDER_TYPE=iso PACKER_BUILD_NAME=vmware `,
-		`BAZ=qux FOO=bar PACKER_BUILDER_TYPE=iso PACKER_BUILD_NAME=vmware `,
-		`FOO=bar=baz PACKER_BUILDER_TYPE=iso PACKER_BUILD_NAME=vmware `,
-		`FOO==bar PACKER_BUILDER_TYPE=iso PACKER_BUILD_NAME=vmware `,
+		`BAR=foo FOO=bar PACKER_BUILDER_TYPE=iso PACKER_BUILD_NAME=vmware `,
+		`BAR=foo'"'"'s FOO=bar'"'"'s PACKER_BUILDER_TYPE=iso PACKER_BUILD_NAME=vmware `,
+		`BAR=foo BAZ=qux FOO=bar PACKER_BUILDER_TYPE=iso PACKER_BUILD_NAME=vmware YAR=yaa `,
+		`BAR=foo=yar FOO=bar=baz PACKER_BUILDER_TYPE=iso PACKER_BUILD_NAME=vmware `,
+		`BAR==foo FOO==bar PACKER_BUILDER_TYPE=iso PACKER_BUILD_NAME=vmware `,
 	}
 
 	p := new(Provisioner)
@@ -320,6 +361,7 @@ func TestProvisioner_createFlattenedEnvVars_withEnvVarFormat(t *testing.T) {
 
 	for i, expectedValue := range expected {
 		p.config.Vars = userEnvVarTests[i]
+		p.config.Env = userEnvVarEnvmapTests[i]
 		flattenedEnvVars = p.createFlattenedEnvVars()
 		if flattenedEnvVars != expectedValue {
 			t.Fatalf("expected flattened env vars to be: %s, got %s.", expectedValue, flattenedEnvVars)
@@ -339,28 +381,53 @@ func TestProvisioner_createEnvVarFileContent(t *testing.T) {
 		{"FOO=bar=baz"},        // User env var with value containing equals
 		{"FOO==bar"},           // User env var with value starting with equals
 	}
+	userEnvVarEnvmapTests := []map[string]string{
+		{},
+		{
+			"BAR": "foo",
+		},
+		{
+			"BAR": "foo's",
+		},
+		{
+			"BAR": "foo",
+			"YAR": "yaa",
+		},
+		{
+			"BAR": "foo=yar",
+		},
+		{
+			"BAR": "=foo",
+		},
+	}
 	expected := []string{
 		`export PACKER_BUILDER_TYPE='iso'
 export PACKER_BUILD_NAME='vmware'
 `,
-		`export FOO='bar'
-export PACKER_BUILDER_TYPE='iso'
-export PACKER_BUILD_NAME='vmware'
-`,
-		`export FOO='bar'"'"'s'
-export PACKER_BUILDER_TYPE='iso'
-export PACKER_BUILD_NAME='vmware'
-`,
-		`export BAZ='qux'
+		`export BAR='foo'
 export FOO='bar'
 export PACKER_BUILDER_TYPE='iso'
 export PACKER_BUILD_NAME='vmware'
 `,
-		`export FOO='bar=baz'
+		`export BAR='foo'"'"'s'
+export FOO='bar'"'"'s'
 export PACKER_BUILDER_TYPE='iso'
 export PACKER_BUILD_NAME='vmware'
 `,
-		`export FOO='=bar'
+		`export BAR='foo'
+export BAZ='qux'
+export FOO='bar'
+export PACKER_BUILDER_TYPE='iso'
+export PACKER_BUILD_NAME='vmware'
+export YAR='yaa'
+`,
+		`export BAR='foo=yar'
+export FOO='bar=baz'
+export PACKER_BUILDER_TYPE='iso'
+export PACKER_BUILD_NAME='vmware'
+`,
+		`export BAR='=foo'
+export FOO='=bar'
 export PACKER_BUILDER_TYPE='iso'
 export PACKER_BUILD_NAME='vmware'
 `,
@@ -377,6 +444,7 @@ export PACKER_BUILD_NAME='vmware'
 
 	for i, expectedValue := range expected {
 		p.config.Vars = userEnvVarTests[i]
+		p.config.Env = userEnvVarEnvmapTests[i]
 		flattenedEnvVars = p.createEnvVarFileContent()
 		if flattenedEnvVars != expectedValue {
 			t.Fatalf("expected flattened env vars to be: %s, got %s.", expectedValue, flattenedEnvVars)
@@ -394,20 +462,37 @@ func TestProvisioner_createEnvVarFileContent_withEnvVarFormat(t *testing.T) {
 		{"FOO=bar=baz"},        // User env var with value containing equals
 		{"FOO==bar"},           // User env var with value starting with equals
 	}
+	userEnvVarEnvmapTests := []map[string]string{
+		{},
+		{
+			"BAR": "foo",
+			"YAR": "yaa",
+		},
+		{
+			"BAR": "foo=yar",
+		},
+		{
+			"BAR": "=foo",
+		},
+	}
 	expected := []string{
 		`PACKER_BUILDER_TYPE=iso
 PACKER_BUILD_NAME=vmware
 `,
-		`BAZ=qux
+		`BAR=foo
+BAZ=qux
 FOO=bar
 PACKER_BUILDER_TYPE=iso
 PACKER_BUILD_NAME=vmware
+YAR=yaa
 `,
-		`FOO=bar=baz
+		`BAR=foo=yar
+FOO=bar=baz
 PACKER_BUILDER_TYPE=iso
 PACKER_BUILD_NAME=vmware
 `,
-		`FOO==bar
+		`BAR==foo
+FOO==bar
 PACKER_BUILDER_TYPE=iso
 PACKER_BUILD_NAME=vmware
 `,
@@ -426,6 +511,7 @@ PACKER_BUILD_NAME=vmware
 
 	for i, expectedValue := range expected {
 		p.config.Vars = userEnvVarTests[i]
+		p.config.Env = userEnvVarEnvmapTests[i]
 		flattenedEnvVars = p.createEnvVarFileContent()
 		if flattenedEnvVars != expectedValue {
 			t.Fatalf("expected flattened env vars to be: %q, got %q.", expectedValue, flattenedEnvVars)

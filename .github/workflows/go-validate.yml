@@ -1,0 +1,78 @@
+#
+# This GitHub action runs basic linting checks for Packer.
+#
+
+name: "Go Validate"
+
+on:
+  push:
+    branches:
+      - 'main'
+      - release/**
+      - feature/**
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  get-go-version:
+    runs-on: ubuntu-latest
+    outputs:
+      go-version: ${{ steps.get-go-version.outputs.go-version }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - name: 'Determine Go version'
+        id: get-go-version
+        run: |
+          echo "Found Go $(cat .go-version)"
+          echo "go-version=$(cat .go-version)" >> $GITHUB_OUTPUT
+  check-mod-tidy:
+    needs:
+      - get-go-version
+    runs-on: ubuntu-latest
+    name: Go Mod Tidy
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+        with:
+          go-version: ${{ needs.get-go-version.outputs.go-version }}
+      - run: go mod tidy
+  check-lint:
+    needs:
+      - get-go-version
+    runs-on: ubuntu-latest
+    name: Lint
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+        with:
+          go-version: ${{ needs.get-go-version.outputs.go-version }}
+      - run: echo "$GITHUB_SHA"
+      - run: git fetch --all
+      - run: echo $(git merge-base origin/main $GITHUB_SHA)
+      - run: make ci-lint
+  check-fmt:
+    needs:
+      - get-go-version
+    runs-on: ubuntu-latest
+    name: Fmt check
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+        with:
+          go-version: ${{ needs.get-go-version.outputs.go-version }}
+      - run: make fmt-check
+  check-generate:
+    needs:
+      - get-go-version
+    runs-on: ubuntu-latest
+    name: Generate check
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+        with:
+          go-version: ${{ needs.get-go-version.outputs.go-version }}
+      - run: make generate-check

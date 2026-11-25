@@ -1,3 +1,6 @@
+// Copyright IBM Corp. 2024, 2026
+// SPDX-License-Identifier: BUSL-1.1
+
 package packer
 
 import (
@@ -9,6 +12,7 @@ import (
 	packersdk "github.com/hashicorp/packer-plugin-sdk/packer"
 	"github.com/hashicorp/packer-plugin-sdk/packerbuilderdata"
 	"github.com/hashicorp/packer/version"
+	"github.com/zclconf/go-cty/cty"
 )
 
 func boolPointer(tf bool) *bool {
@@ -32,11 +36,12 @@ func testBuild() *CoreBuild {
 		},
 		PostProcessors: [][]CoreBuildPostProcessor{
 			{
-				{&MockPostProcessor{ArtifactId: "pp"}, "testPP", "testPPName", make(map[string]interface{}), boolPointer(true)},
+				{&MockPostProcessor{ArtifactId: "pp"}, "testPP", "testPPName", cty.Value{}, make(map[string]interface{}), boolPointer(true)},
 			},
 		},
-		Variables: make(map[string]string),
-		onError:   "cleanup",
+		Variables:     make(map[string]string),
+		onError:       "cleanup",
+		SensitiveVars: []string{"sensitive_var"},
 	}
 }
 
@@ -50,6 +55,7 @@ func testDefaultPackerConfig() map[string]interface{} {
 		common.OnErrorConfigKey:       "cleanup",
 		common.TemplatePathKey:        "",
 		common.UserVariablesConfigKey: make(map[string]string),
+		common.SensitiveVarsConfigKey: []string{"sensitive_var"},
 	}
 }
 func TestBuild_Name(t *testing.T) {
@@ -224,6 +230,92 @@ func TestBuildPrepare_ProvisionerGetsGeneratedMap(t *testing.T) {
 	}
 }
 
+func TestBuild_PrepareProvisioners_ReusesStoredGeneratedVars(t *testing.T) {
+	packerConfig := testDefaultPackerConfig()
+
+	build := testBuild()
+	builder := build.Builder.(*packersdk.MockBuilder)
+	builder.GeneratedVars = []string{"PartyVar"}
+
+	if _, err := build.Prepare(); err != nil {
+		t.Fatalf("bad error: %s", err)
+	}
+
+	builder.PrepareCalled = false
+
+	lateProv := CoreBuildProvisioner{
+		PType:       "mock-provisioner",
+		Provisioner: &packersdk.MockProvisioner{},
+		config:      []interface{}{84},
+	}
+
+	if err := build.PrepareProvisioners(lateProv); err != nil {
+		t.Fatalf("bad error: %s", err)
+	}
+
+	if builder.PrepareCalled {
+		t.Fatal("builder prepare should not be called again")
+	}
+
+	prov := lateProv.Provisioner.(*packersdk.MockProvisioner)
+	generated := BasicPlaceholderData()
+	generated["PartyVar"] = "Build_PartyVar. " + packerbuilderdata.PlaceholderMsg
+	if !reflect.DeepEqual(prov.PrepConfigs, []interface{}{84, packerConfig, generated}) {
+		t.Fatalf("bad: %#v", prov.PrepConfigs)
+	}
+}
+
+func TestBuild_PrepareProvisioners_ReusesStoredGeneratedVarsForPreparedBuild(t *testing.T) {
+	packerConfig := testDefaultPackerConfig()
+
+	build := testBuild()
+	builder := build.Builder.(*packersdk.MockBuilder)
+	build.Prepared = true
+	build.SetGeneratedVars([]string{"PartyVar"})
+
+	if _, err := build.Prepare(); err != nil {
+		t.Fatalf("bad error: %s", err)
+	}
+
+	lateProv := CoreBuildProvisioner{
+		PType:       "mock-provisioner",
+		Provisioner: &packersdk.MockProvisioner{},
+		config:      []interface{}{84},
+	}
+
+	if err := build.PrepareProvisioners(lateProv); err != nil {
+		t.Fatalf("bad error: %s", err)
+	}
+
+	if builder.PrepareCalled {
+		t.Fatal("builder prepare should not be called for prepared builds")
+	}
+
+	prov := lateProv.Provisioner.(*packersdk.MockProvisioner)
+	generated := BasicPlaceholderData()
+	generated["PartyVar"] = "Build_PartyVar. " + packerbuilderdata.PlaceholderMsg
+	if !reflect.DeepEqual(prov.PrepConfigs, []interface{}{84, packerConfig, generated}) {
+		t.Fatalf("bad: %#v", prov.PrepConfigs)
+	}
+}
+
+func TestBuild_PrepareProvisioners_RequiresPrepare(t *testing.T) {
+	build := testBuild()
+	lateProv := CoreBuildProvisioner{
+		PType:       "mock-provisioner",
+		Provisioner: &packersdk.MockProvisioner{},
+		config:      []interface{}{84},
+	}
+
+	err := build.PrepareProvisioners(lateProv)
+	if err == nil {
+		t.Fatal("expected error")
+	}
+	if err.Error() != "Prepare must be called first" {
+		t.Fatalf("bad error: %s", err)
+	}
+}
+
 func TestBuild_Run(t *testing.T) {
 	ui := testUi()
 
@@ -302,7 +394,7 @@ func TestBuild_Run_Artifacts(t *testing.T) {
 	build = testBuild()
 	build.PostProcessors = [][]CoreBuildPostProcessor{
 		{
-			{&MockPostProcessor{ArtifactId: "pp"}, "pp", "testPPName", make(map[string]interface{}), boolPointer(false)},
+			{&MockPostProcessor{ArtifactId: "pp"}, "pp", "testPPName", cty.Value{}, make(map[string]interface{}), boolPointer(false)},
 		},
 	}
 
@@ -327,10 +419,10 @@ func TestBuild_Run_Artifacts(t *testing.T) {
 	build = testBuild()
 	build.PostProcessors = [][]CoreBuildPostProcessor{
 		{
-			{&MockPostProcessor{ArtifactId: "pp1"}, "pp", "testPPName", make(map[string]interface{}), boolPointer(false)},
+			{&MockPostProcessor{ArtifactId: "pp1"}, "pp", "testPPName", cty.Value{}, make(map[string]interface{}), boolPointer(false)},
 		},
 		{
-			{&MockPostProcessor{ArtifactId: "pp2"}, "pp", "testPPName", make(map[string]interface{}), boolPointer(true)},
+			{&MockPostProcessor{ArtifactId: "pp2"}, "pp", "testPPName", cty.Value{}, make(map[string]interface{}), boolPointer(true)},
 		},
 	}
 
@@ -355,12 +447,12 @@ func TestBuild_Run_Artifacts(t *testing.T) {
 	build = testBuild()
 	build.PostProcessors = [][]CoreBuildPostProcessor{
 		{
-			{&MockPostProcessor{ArtifactId: "pp1a"}, "pp", "testPPName", make(map[string]interface{}), boolPointer(false)},
-			{&MockPostProcessor{ArtifactId: "pp1b"}, "pp", "testPPName", make(map[string]interface{}), boolPointer(true)},
+			{&MockPostProcessor{ArtifactId: "pp1a"}, "pp", "testPPName", cty.Value{}, make(map[string]interface{}), boolPointer(false)},
+			{&MockPostProcessor{ArtifactId: "pp1b"}, "pp", "testPPName", cty.Value{}, make(map[string]interface{}), boolPointer(true)},
 		},
 		{
-			{&MockPostProcessor{ArtifactId: "pp2a"}, "pp", "testPPName", make(map[string]interface{}), boolPointer(false)},
-			{&MockPostProcessor{ArtifactId: "pp2b"}, "pp", "testPPName", make(map[string]interface{}), boolPointer(false)},
+			{&MockPostProcessor{ArtifactId: "pp2a"}, "pp", "testPPName", cty.Value{}, make(map[string]interface{}), boolPointer(false)},
+			{&MockPostProcessor{ArtifactId: "pp2b"}, "pp", "testPPName", cty.Value{}, make(map[string]interface{}), boolPointer(false)},
 		},
 	}
 
@@ -386,7 +478,7 @@ func TestBuild_Run_Artifacts(t *testing.T) {
 	build.PostProcessors = [][]CoreBuildPostProcessor{
 		{
 			{
-				&MockPostProcessor{ArtifactId: "pp", Keep: true, ForceOverride: true}, "pp", "testPPName", make(map[string]interface{}), boolPointer(false),
+				&MockPostProcessor{ArtifactId: "pp", Keep: true, ForceOverride: true}, "pp", "testPPName", cty.Value{}, make(map[string]interface{}), boolPointer(false),
 			},
 		},
 	}
@@ -414,7 +506,7 @@ func TestBuild_Run_Artifacts(t *testing.T) {
 	build.PostProcessors = [][]CoreBuildPostProcessor{
 		{
 			{
-				&MockPostProcessor{ArtifactId: "pp", Keep: true, ForceOverride: false}, "pp", "testPPName", make(map[string]interface{}), boolPointer(false),
+				&MockPostProcessor{ArtifactId: "pp", Keep: true, ForceOverride: false}, "pp", "testPPName", cty.Value{}, make(map[string]interface{}), boolPointer(false),
 			},
 		},
 	}
@@ -441,7 +533,7 @@ func TestBuild_Run_Artifacts(t *testing.T) {
 	build.PostProcessors = [][]CoreBuildPostProcessor{
 		{
 			{
-				&MockPostProcessor{ArtifactId: "pp", Keep: true, ForceOverride: false}, "pp", "testPPName", make(map[string]interface{}), nil,
+				&MockPostProcessor{ArtifactId: "pp", Keep: true, ForceOverride: false}, "pp", "testPPName", cty.Value{}, make(map[string]interface{}), nil,
 			},
 		},
 	}

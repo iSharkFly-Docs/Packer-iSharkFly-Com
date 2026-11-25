@@ -1,3 +1,6 @@
+// Copyright IBM Corp. 2024, 2026
+// SPDX-License-Identifier: BUSL-1.1
+
 package version
 
 import (
@@ -8,6 +11,6 @@ import (
 var SleepProvisionerVersion *version.PluginVersion
 
 func init() {
-	SleepProvisionerVersion = version.InitializePluginVersion(
-		packerVersion.Version, packerVersion.VersionPrerelease)
+	SleepProvisionerVersion = version.NewPluginVersion(
+		packerVersion.Version, packerVersion.VersionPrerelease, packerVersion.VersionMetadata)
 }

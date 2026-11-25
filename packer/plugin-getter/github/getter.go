@@ -1,3 +1,6 @@
+// Copyright IBM Corp. 2024, 2026
+// SPDX-License-Identifier: BUSL-1.1
+
 package github
 
 import (
@@ -8,32 +11,44 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 
-	"github.com/google/go-github/v33/github"
 	plugingetter "github.com/hashicorp/packer/packer/plugin-getter"
+
+	"github.com/google/go-github/v75/github"
+	"github.com/hashicorp/packer/hcl2template/addrs"
 	"golang.org/x/oauth2"
 )
 
 const (
 	ghTokenAccessor  = "PACKER_GITHUB_API_TOKEN"
-	defaultUserAgent = "packer-plugin-getter"
+	defaultUserAgent = "packer-github-plugin-getter"
 	defaultHostname  = "github.com"
 )
 
 type Getter struct {
 	Client    *github.Client
 	UserAgent string
+	Name      string
 }
 
 var _ plugingetter.Getter = &Getter{}
 
-func tranformChecksumStream() func(in io.ReadCloser) (io.ReadCloser, error) {
+type PluginMetadata struct {
+	Versions map[string]PluginVersion `json:"versions"`
+}
+
+type PluginVersion struct {
+	Name    string `json:"name"`
+	Version string `json:"version"`
+}
+
+func TransformChecksumStream() func(in io.ReadCloser) (io.ReadCloser, error) {
 	return func(in io.ReadCloser) (io.ReadCloser, error) {
 		defer in.Close()
 		rd := bufio.NewReader(in)
@@ -68,7 +83,7 @@ func tranformChecksumStream() func(in io.ReadCloser) (io.ReadCloser, error) {
 			}
 		}
 		_, _ = buffer.WriteString("]")
-		return ioutil.NopCloser(buffer), nil
+		return io.NopCloser(buffer), nil
 	}
 }
 
@@ -100,7 +115,7 @@ func transformVersionStream(in io.ReadCloser) (io.ReadCloser, error) {
 		return nil, err
 	}
 
-	return ioutil.NopCloser(buf), nil
+	return io.NopCloser(buf), nil
 }
 
 // HostSpecificTokenAuthTransport makes sure the http roundtripper only sets an
@@ -154,10 +169,45 @@ func (t *HostSpecificTokenAuthTransport) base() http.RoundTripper {
 	return http.DefaultTransport
 }
 
+type GithubPlugin struct {
+	Hostname  string
+	Namespace string
+	Type      string
+}
+
+func NewGithubPlugin(source *addrs.Plugin) (*GithubPlugin, error) {
+	parts := source.Parts()
+	if len(parts) != 3 {
+		return nil, fmt.Errorf("Invalid github.com URI %q: a Github-compatible source must be in the github.com/<namespace>/<name> format.", source.String())
+	}
+
+	if parts[0] != defaultHostname {
+		return nil, fmt.Errorf("%q doesn't appear to be a valid %q source address; check source and try again.", source.String(), defaultHostname)
+	}
+
+	return &GithubPlugin{
+		Hostname:  parts[0],
+		Namespace: parts[1],
+		Type:      strings.Replace(parts[2], "packer-plugin-", "", 1),
+	}, nil
+}
+
+func (gp GithubPlugin) RealRelativePath() string {
+	return path.Join(
+		gp.Namespace,
+		fmt.Sprintf("packer-plugin-%s", gp.Type),
+	)
+}
+
+func (gp GithubPlugin) PluginType() string {
+	return fmt.Sprintf("packer-plugin-%s", gp.Type)
+}
+
 func (g *Getter) Get(what string, opts plugingetter.GetOptions) (io.ReadCloser, error) {
-	if opts.PluginRequirement.Identifier.Hostname != defaultHostname {
-		s := opts.PluginRequirement.Identifier.String() + " doesn't appear to be a valid " + defaultHostname + " source address; check source and try again."
-		return nil, errors.New(s)
+	log.Printf("[TRACE] Getting %s of %s plugin from %s", what, opts.PluginRequirement.Identifier, g.Name)
+	ghURI, err := NewGithubPlugin(opts.PluginRequirement.Identifier)
+	if err != nil {
+		return nil, err
 	}
 
 	ctx := context.TODO()
@@ -175,6 +225,8 @@ func (g *Getter) Get(what string, opts plugingetter.GetOptions) (io.ReadCloser, 
 					},
 				},
 			}
+		} else {
+			log.Printf("[WARNING] github-getter: no GitHub token set, if you intend to install plugins often, please set the %s env var", ghTokenAccessor)
 		}
 		g.Client = github.NewClient(tc)
 		g.Client.UserAgent = defaultUserAgent
@@ -184,27 +236,26 @@ func (g *Getter) Get(what string, opts plugingetter.GetOptions) (io.ReadCloser, 
 	}
 
 	var req *http.Request
-	var err error
 	transform := func(in io.ReadCloser) (io.ReadCloser, error) {
 		return in, nil
 	}
 
 	switch what {
 	case "releases":
-		u := filepath.ToSlash("/repos/" + opts.PluginRequirement.Identifier.RealRelativePath() + "/git/matching-refs/tags")
+		u := filepath.ToSlash("/repos/" + ghURI.RealRelativePath() + "/git/matching-refs/tags")
 		req, err = g.Client.NewRequest("GET", u, nil)
 		transform = transformVersionStream
 	case "sha256":
 		// something like https://github.com/sylviamoss/packer-plugin-comment/releases/download/v0.2.11/packer-plugin-comment_v0.2.11_x5_SHA256SUMS
-		u := filepath.ToSlash("https://github.com/" + opts.PluginRequirement.Identifier.RealRelativePath() + "/releases/download/" + opts.Version() + "/" + opts.PluginRequirement.FilenamePrefix() + opts.Version() + "_SHA256SUMS")
+		u := filepath.ToSlash("https://github.com/" + ghURI.RealRelativePath() + "/releases/download/" + opts.Version() + "/" + opts.PluginRequirement.FilenamePrefix() + opts.Version() + "_SHA256SUMS")
 		req, err = g.Client.NewRequest(
 			"GET",
 			u,
 			nil,
 		)
-		transform = tranformChecksumStream()
+		transform = TransformChecksumStream()
 	case "zip":
-		u := filepath.ToSlash("https://github.com/" + opts.PluginRequirement.Identifier.RealRelativePath() + "/releases/download/" + opts.Version() + "/" + opts.ExpectedZipFilename())
+		u := filepath.ToSlash("https://github.com/" + ghURI.RealRelativePath() + "/releases/download/" + opts.Version() + "/" + opts.ExpectedZipFilename())
 		req, err = g.Client.NewRequest(
 			"GET",
 			u,
@@ -220,13 +271,72 @@ func (g *Getter) Get(what string, opts plugingetter.GetOptions) (io.ReadCloser, 
 	log.Printf("[DEBUG] github-getter: getting %q", req.URL)
 	resp, err := g.Client.BareDo(ctx, req)
 	if err != nil {
-		// here BareDo will return an err if the request failed or if the
-		// status is not considered a valid http status.
+		// here BareDo will return an err if the request failed or if the status
+		// is not considered a valid http status. So we have to close the body
+		// if it's not nil.
 		if resp != nil {
 			resp.Body.Close()
 		}
-		return nil, err
+		switch err := err.(type) {
+		case *github.RateLimitError:
+			return nil, &plugingetter.RateLimitError{
+				SetableEnvVar: ghTokenAccessor,
+				Err:           err,
+				ResetTime:     err.Rate.Reset.Time,
+			}
+		default:
+			log.Printf("[TRACE] failed requesting: %T. %v", err, err)
+			return nil, err
+		}
+
 	}
 
 	return transform(resp.Body)
+}
+
+// Init method: a file inside will look like so:
+//
+//	packer-plugin-comment_v0.2.12_x5.0_freebsd_amd64.zip
+func (g *Getter) Init(req *plugingetter.Requirement, entry *plugingetter.ChecksumFileEntry) error {
+	filename := entry.Filename
+	res := strings.TrimPrefix(filename, req.FilenamePrefix())
+	// res now looks like v0.2.12_x5.0_freebsd_amd64.zip
+
+	entry.Ext = filepath.Ext(res)
+
+	res = strings.TrimSuffix(res, entry.Ext)
+	// res now looks like v0.2.12_x5.0_freebsd_amd64
+
+	parts := strings.Split(res, "_")
+	// ["v0.2.12", "x5.0", "freebsd", "amd64"]
+	if len(parts) < 4 {
+		return fmt.Errorf("malformed filename expected %s{version}_x{protocol-version}_{os}_{arch}", req.FilenamePrefix())
+	}
+
+	entry.BinVersion, entry.ProtVersion, entry.Os, entry.Arch = parts[0], parts[1], parts[2], parts[3]
+
+	return nil
+}
+
+func (g *Getter) Validate(opt plugingetter.GetOptions, expectedVersion string, installOpts plugingetter.BinaryInstallationOptions, entry *plugingetter.ChecksumFileEntry) error {
+	expectedBinVersion := "v" + expectedVersion
+	if entry.BinVersion != expectedBinVersion {
+		return fmt.Errorf("wrong version: %s does not match expected %s", entry.BinVersion, expectedBinVersion)
+	}
+	if entry.Os != installOpts.OS || entry.Arch != installOpts.ARCH {
+		return fmt.Errorf("wrong system, expected %s_%s", installOpts.OS, installOpts.ARCH)
+	}
+
+	return installOpts.CheckProtocolVersion(entry.ProtVersion)
+}
+
+func (g *Getter) ExpectedFileName(pr *plugingetter.Requirement, version string, entry *plugingetter.ChecksumFileEntry, _ string) string {
+	pluginSourceParts := strings.Split(pr.Identifier.Source, "/")
+	return strings.Join([]string{
+		"packer-plugin-" + pluginSourceParts[2],
+		entry.BinVersion,
+		entry.ProtVersion,
+		entry.Os,
+		entry.Arch + entry.Ext,
+	}, "_")
 }

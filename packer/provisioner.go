@@ -1,11 +1,21 @@
+// Copyright IBM Corp. 2024, 2026
+// SPDX-License-Identifier: BUSL-1.1
+
 package packer
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
-	"sync"
+	"os"
 	"time"
+
+	hcpSbomProvisioner "github.com/hashicorp/packer/provisioner/hcp-sbom"
+
+	hcpPackerModels "github.com/hashicorp/hcp-sdk-go/clients/cloud-packer-service/stable/2023-01-01/models"
+	"github.com/klauspost/compress/zstd"
 
 	"github.com/hashicorp/hcl/v2/hcldec"
 	packersdk "github.com/hashicorp/packer-plugin-sdk/packer"
@@ -130,6 +140,50 @@ func (h *ProvisionHook) Run(ctx context.Context, name string, ui packersdk.Ui, c
 	return nil
 }
 
+// ProvisionerWrapOptions contains options for wrapping a provisioner with
+// additional behavior like pausing, timeouts, and retries.
+type ProvisionerWrapOptions struct {
+	PauseBefore     time.Duration
+	Timeout         time.Duration
+	MaxRetries      int
+	ContinueOnError bool
+}
+
+// WrapProvisionerWithOptions wraps a provisioner with additional behavior
+// based on the provided options.
+func WrapProvisionerWithOptions(provisioner packersdk.Provisioner, opts ProvisionerWrapOptions) packersdk.Provisioner {
+	wrapped := provisioner
+
+	if opts.PauseBefore != 0 {
+		wrapped = &PausedProvisioner{
+			PauseBefore: opts.PauseBefore,
+			Provisioner: wrapped,
+		}
+	}
+
+	if opts.Timeout != 0 {
+		wrapped = &TimeoutProvisioner{
+			Timeout:     opts.Timeout,
+			Provisioner: wrapped,
+		}
+	}
+
+	if opts.MaxRetries != 0 {
+		wrapped = &RetriedProvisioner{
+			MaxRetries:  opts.MaxRetries,
+			Provisioner: wrapped,
+		}
+	}
+
+	if opts.ContinueOnError {
+		wrapped = &ContinueOnErrorProvisioner{
+			Provisioner: wrapped,
+		}
+	}
+
+	return wrapped
+}
+
 // PausedProvisioner is a Provisioner implementation that pauses before
 // the provisioner is actually run.
 type PausedProvisioner struct {
@@ -198,14 +252,47 @@ func (r *RetriedProvisioner) Provision(ctx context.Context, ui packersdk.Ui, com
 	return err
 }
 
+// ContinueOnErrorProvisioner is a Provisioner implementation that allows the
+// build to continue even when the wrapped provisioner returns an error.
+type ContinueOnErrorProvisioner struct {
+	Provisioner packersdk.Provisioner
+}
+
+func (p *ContinueOnErrorProvisioner) ConfigSpec() hcldec.ObjectSpec {
+	return p.Provisioner.ConfigSpec()
+}
+func (p *ContinueOnErrorProvisioner) FlatConfig() interface{} {
+	if fc, ok := p.Provisioner.(interface{ FlatConfig() interface{} }); ok {
+		return fc.FlatConfig()
+	}
+	return nil
+}
+func (p *ContinueOnErrorProvisioner) Prepare(raws ...interface{}) error {
+	return p.Provisioner.Prepare(raws...)
+}
+
+func (p *ContinueOnErrorProvisioner) Provision(ctx context.Context, ui packersdk.Ui, comm packersdk.Communicator, generatedData map[string]interface{}) error {
+	err := p.Provisioner.Provision(ctx, ui, comm, generatedData)
+	if err == nil {
+		return nil
+	}
+
+	// Do not swallow cancellations; those should still stop the build. Return
+	// both the original provisioner failure and the context error so callers
+	// keep the failure detail while still being able to detect the
+	// cancellation via errors.Is(err, context.Canceled).
+	if ctx.Err() != nil {
+		return errors.Join(err, ctx.Err())
+	}
+
+	ui.Say(fmt.Sprintf("Warning: Provisioner failed with %q, but continue_on_error is set; continuing the build.", err))
+	return nil
+}
+
 // DebuggedProvisioner is a Provisioner implementation that waits until a key
 // press before the provisioner is actually run.
 type DebuggedProvisioner struct {
 	Provisioner packersdk.Provisioner
-
-	cancelCh chan struct{}
-	doneCh   chan struct{}
-	lock     sync.Mutex
 }
 
 func (p *DebuggedProvisioner) ConfigSpec() hcldec.ObjectSpec { return p.ConfigSpec() }
@@ -235,4 +322,89 @@ func (p *DebuggedProvisioner) Provision(ctx context.Context, ui packersdk.Ui, co
 	}
 
 	return p.Provisioner.Provision(ctx, ui, comm, generatedData)
+}
+
+// SBOMInternalProvisioner is a wrapper provisioner for the `hcp-sbom` provisioner
+// that sets the path for SBOM file download and, after the successful execution of
+// the `hcp-sbom` provisioner, compresses the SBOM and prepares the data for API
+// integration.
+type SBOMInternalProvisioner struct {
+	Provisioner    packersdk.Provisioner
+	CompressedData []byte
+	SBOMFormat     hcpPackerModels.HashicorpCloudPacker20230101SbomFormat
+	SBOMName       string
+}
+
+func (p *SBOMInternalProvisioner) ConfigSpec() hcldec.ObjectSpec { return p.Provisioner.ConfigSpec() }
+func (p *SBOMInternalProvisioner) FlatConfig() interface{} {
+	// Try to delegate to inner provisioner if it implements FlatConfig
+	if fc, ok := p.Provisioner.(interface{ FlatConfig() interface{} }); ok {
+		return fc.FlatConfig()
+	}
+	return nil
+}
+
+func (p *SBOMInternalProvisioner) Prepare(raws ...interface{}) error {
+	return p.Provisioner.Prepare(raws...)
+}
+
+func (p *SBOMInternalProvisioner) Provision(
+	ctx context.Context, ui packersdk.Ui, comm packersdk.Communicator,
+	generatedData map[string]interface{},
+) error {
+	// Original implementation - all logic now in hcp-sbom provisioner
+	cwd, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("failed to get current working directory for Packer SBOM: %s", err)
+	}
+
+	tmpFile, err := os.CreateTemp(cwd, "packer-sbom-*.json")
+	if err != nil {
+		return fmt.Errorf("failed to create internal temporary file for Packer SBOM: %s", err)
+	}
+
+	tmpFileName := tmpFile.Name()
+	if err = tmpFile.Close(); err != nil {
+		return fmt.Errorf("failed to close temporary file for Packer SBOM %s: %s", tmpFileName, err)
+	}
+
+	defer func(name string) {
+		fileRemoveErr := os.Remove(name)
+		if fileRemoveErr != nil {
+			log.Printf("Error removing SBOM temporary file %s: %s", name, fileRemoveErr)
+		}
+	}(tmpFile.Name())
+
+	generatedData["dst"] = tmpFile.Name()
+
+	err = p.Provisioner.Provision(ctx, ui, comm, generatedData)
+	if err != nil {
+		return err
+	}
+
+	packerSbom, err := os.Open(tmpFileName)
+	if err != nil {
+		return fmt.Errorf("failed to open Packer SBOM file %q: %s", tmpFileName, err)
+	}
+	defer func() {
+		if err := packerSbom.Close(); err != nil {
+			log.Printf("[WARN] Failed to close Packer SBOM file: %s", err)
+		}
+	}()
+
+	provisionerOut := &hcpSbomProvisioner.PackerSBOM{}
+	err = json.NewDecoder(packerSbom).Decode(provisionerOut)
+	if err != nil {
+		return fmt.Errorf("malformed packer SBOM output from file %q: %s", tmpFileName, err)
+	}
+
+	encoder, err := zstd.NewWriter(nil, zstd.WithEncoderLevel(zstd.SpeedBestCompression))
+	if err != nil {
+		return fmt.Errorf("failed to create zstd encoder: %s", err)
+	}
+	p.CompressedData = encoder.EncodeAll(provisionerOut.RawSBOM, nil)
+	p.SBOMFormat = provisionerOut.Format
+	p.SBOMName = provisionerOut.Name
+
+	return nil
 }

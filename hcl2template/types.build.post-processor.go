@@ -1,3 +1,6 @@
+// Copyright IBM Corp. 2024, 2026
+// SPDX-License-Identifier: BUSL-1.1
+
 package hcl2template
 
 import (
@@ -23,7 +26,7 @@ func (p *PostProcessorBlock) String() string {
 	return fmt.Sprintf(buildPostProcessorLabel+"-block %q %q", p.PType, p.PName)
 }
 
-func (p *Parser) decodePostProcessor(block *hcl.Block) (*PostProcessorBlock, hcl.Diagnostics) {
+func (p *Parser) decodePostProcessor(block *hcl.Block, ectx *hcl.EvalContext) (*PostProcessorBlock, hcl.Diagnostics) {
 	var b struct {
 		Name              string   `hcl:"name,optional"`
 		Only              []string `hcl:"only,optional"`
@@ -31,7 +34,8 @@ func (p *Parser) decodePostProcessor(block *hcl.Block) (*PostProcessorBlock, hcl
 		KeepInputArtifact *bool    `hcl:"keep_input_artifact,optional"`
 		Rest              hcl.Body `hcl:",remain"`
 	}
-	diags := gohcl.DecodeBody(block.Body, nil, &b)
+
+	diags := gohcl.DecodeBody(block.Body, ectx, &b)
 	if diags.HasErrors() {
 		return nil, diags
 	}
@@ -68,9 +72,12 @@ func (cfg *PackerConfig) startPostProcessor(source SourceUseBlock, pp *PostProce
 	}
 
 	builderVars := source.builderVariables()
+	builderVars["packer_core_version"] = cfg.CorePackerVersionString
 	builderVars["packer_debug"] = strconv.FormatBool(cfg.debug)
 	builderVars["packer_force"] = strconv.FormatBool(cfg.force)
 	builderVars["packer_on_error"] = cfg.onError
+	builderVars["packer_sensitive_variables"] = cfg.sensitiveInputVariableKeys()
+	builderVars["packer_user_variables"] = cfg.userVariableValues()
 
 	hclPostProcessor := &HCL2PostProcessor{
 		PostProcessor:      postProcessor,

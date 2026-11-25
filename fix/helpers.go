@@ -1,3 +1,6 @@
+// Copyright IBM Corp. 2024, 2026
+// SPDX-License-Identifier: BUSL-1.1
+
 package fix
 
 // PP is a convenient way to interact with the post-processors within a fixer

@@ -1,3 +1,6 @@
+// Copyright IBM Corp. 2024, 2026
+// SPDX-License-Identifier: BUSL-1.1
+
 package hcl2template
 
 import (
@@ -64,11 +67,12 @@ func (b *SourceUseBlock) ctyValues() map[string]cty.Value {
 }
 
 // decodeBuildSource reads a used source block from a build:
-//  build {
-//    source "type.example" {
-//      name = "local_name"
-//    }
-//  }
+//
+//	build {
+//	  source "type.example" {
+//	    name = "local_name"
+//	  }
+//	}
 func (p *Parser) decodeBuildSource(block *hcl.Block) (SourceUseBlock, hcl.Diagnostics) {
 	ref := sourceRefFromString(block.Labels[0])
 	out := SourceUseBlock{SourceRef: ref}
@@ -110,6 +114,9 @@ func (cfg *PackerConfig) startBuilder(source SourceUseBlock, ectx *hcl.EvalConte
 	}
 
 	body := source.Body
+	// Add known values to source accessor in eval context.
+	ectx.Variables[sourcesAccessor] = cty.ObjectVal(source.ctyValues())
+
 	decoded, moreDiags := decodeHCL2Spec(body, ectx, builder)
 	diags = append(diags, moreDiags...)
 	if moreDiags.HasErrors() {
@@ -128,9 +135,11 @@ func (cfg *PackerConfig) startBuilder(source SourceUseBlock, ectx *hcl.EvalConte
 	// prepare at a later step, to make builds from different template types
 	// easier to reason about.
 	builderVars := source.builderVariables()
+	builderVars["packer_core_version"] = cfg.CorePackerVersionString
 	builderVars["packer_debug"] = strconv.FormatBool(cfg.debug)
 	builderVars["packer_force"] = strconv.FormatBool(cfg.force)
 	builderVars["packer_on_error"] = cfg.onError
+	builderVars["packer_user_variables"] = cfg.userVariableValues()
 
 	generatedVars, warning, err := builder.Prepare(builderVars, decoded)
 	moreDiags = warningErrorsToDiags(cfg.Sources[source.SourceRef].block, warning, err)
@@ -139,9 +148,9 @@ func (cfg *PackerConfig) startBuilder(source SourceUseBlock, ectx *hcl.EvalConte
 }
 
 // These variables will populate the PackerConfig inside of the builders.
-func (source *SourceUseBlock) builderVariables() map[string]string {
-	return map[string]string{
-		"packer_build_name":   source.Name,
+func (source *SourceUseBlock) builderVariables() map[string]interface{} {
+	return map[string]interface{}{
+		"packer_build_name":   source.name(),
 		"packer_builder_type": source.Type,
 	}
 }

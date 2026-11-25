@@ -23,6 +23,7 @@ type FlatConfig struct {
 	Scripts                []string          `cty:"scripts" hcl:"scripts"`
 	ValidExitCodes         []int             `mapstructure:"valid_exit_codes" cty:"valid_exit_codes" hcl:"valid_exit_codes"`
 	Vars                   []string          `mapstructure:"environment_vars" cty:"environment_vars" hcl:"environment_vars"`
+	Env                    map[string]string `mapstructure:"env" cty:"env" hcl:"env"`
 	EnvVarFormat           *string           `mapstructure:"env_var_format" cty:"env_var_format" hcl:"env_var_format"`
 	Binary                 *bool             `cty:"binary" hcl:"binary"`
 	RemotePath             *string           `mapstructure:"remote_path" cty:"remote_path" hcl:"remote_path"`
@@ -36,6 +37,8 @@ type FlatConfig struct {
 	ElevatedPassword       *string           `mapstructure:"elevated_password" cty:"elevated_password" hcl:"elevated_password"`
 	ExecutionPolicy        *string           `mapstructure:"execution_policy" cty:"execution_policy" hcl:"execution_policy"`
 	DebugMode              *int              `mapstructure:"debug_mode" cty:"debug_mode" hcl:"debug_mode"`
+	PauseAfter             *string           `mapstructure:"pause_after" cty:"pause_after" hcl:"pause_after"`
+	UsePwsh                *bool             `mapstructure:"use_pwsh" cty:"use_pwsh" hcl:"use_pwsh"`
 }
 
 // FlatMapstructure returns a new FlatConfig.
@@ -63,6 +66,7 @@ func (*FlatConfig) HCL2Spec() map[string]hcldec.Spec {
 		"scripts":                    &hcldec.AttrSpec{Name: "scripts", Type: cty.List(cty.String), Required: false},
 		"valid_exit_codes":           &hcldec.AttrSpec{Name: "valid_exit_codes", Type: cty.List(cty.Number), Required: false},
 		"environment_vars":           &hcldec.AttrSpec{Name: "environment_vars", Type: cty.List(cty.String), Required: false},
+		"env":                        &hcldec.AttrSpec{Name: "env", Type: cty.Map(cty.String), Required: false},
 		"env_var_format":             &hcldec.AttrSpec{Name: "env_var_format", Type: cty.String, Required: false},
 		"binary":                     &hcldec.AttrSpec{Name: "binary", Type: cty.Bool, Required: false},
 		"remote_path":                &hcldec.AttrSpec{Name: "remote_path", Type: cty.String, Required: false},
@@ -76,6 +80,8 @@ func (*FlatConfig) HCL2Spec() map[string]hcldec.Spec {
 		"elevated_password":          &hcldec.AttrSpec{Name: "elevated_password", Type: cty.String, Required: false},
 		"execution_policy":           &hcldec.AttrSpec{Name: "execution_policy", Type: cty.String, Required: false},
 		"debug_mode":                 &hcldec.AttrSpec{Name: "debug_mode", Type: cty.Number, Required: false},
+		"pause_after":                &hcldec.AttrSpec{Name: "pause_after", Type: cty.String, Required: false},
+		"use_pwsh":                   &hcldec.AttrSpec{Name: "use_pwsh", Type: cty.Bool, Required: false},
 	}
 	return s
 }

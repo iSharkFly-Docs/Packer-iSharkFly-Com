@@ -1,3 +1,7 @@
+// Copyright IBM Corp. 2024, 2026
+// SPDX-License-Identifier: BUSL-1.1
+
+//go:build !go1.10
 // +build !go1.10
 
 package compress

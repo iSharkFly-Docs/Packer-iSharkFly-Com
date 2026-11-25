@@ -1,3 +1,6 @@
+// Copyright IBM Corp. 2024, 2026
+// SPDX-License-Identifier: BUSL-1.1
+
 package command
 
 import (
@@ -33,7 +36,7 @@ func (c *FixCommand) Run(args []string) int {
 
 func (c *FixCommand) ParseArgs(args []string) (*FixArgs, int) {
 	var cfg FixArgs
-	flags := c.Meta.FlagSet("fix", FlagSetNone)
+	flags := c.Meta.FlagSet("fix")
 	flags.Usage = func() { c.Ui.Say(c.Help()) }
 	cfg.AddFlagSets(flags)
 	if err := flags.Parse(args); err != nil {
@@ -50,6 +53,10 @@ func (c *FixCommand) ParseArgs(args []string) (*FixArgs, int) {
 }
 
 func (c *FixCommand) RunContext(ctx context.Context, cla *FixArgs) int {
+	if hcl2, _ := isHCLLoaded(cla.Path); hcl2 {
+		c.Ui.Error("packer fix only works with JSON files for now.")
+		return 1
+	}
 	// Read the file for decoding
 	tplF, err := os.Open(cla.Path)
 	if err != nil {
@@ -162,7 +169,7 @@ func (c *FixCommand) Synopsis() string {
 }
 
 func (c *FixCommand) AutocompleteArgs() complete.Predictor {
-	return complete.PredictNothing
+	return complete.PredictFiles("*")
 }
 
 func (c *FixCommand) AutocompleteFlags() complete.Flags {

@@ -1,3 +1,6 @@
+// Copyright IBM Corp. 2024, 2026
+// SPDX-License-Identifier: BUSL-1.1
+
 package hcl2template
 
 import (
@@ -18,7 +21,7 @@ type HCL2PostProcessor struct {
 	PostProcessor      packersdk.PostProcessor
 	postProcessorBlock *PostProcessorBlock
 	evalContext        *hcl.EvalContext
-	builderVariables   map[string]string
+	builderVariables   map[string]interface{}
 }
 
 func (p *HCL2PostProcessor) ConfigSpec() hcldec.ObjectSpec {
@@ -31,6 +34,9 @@ func (p *HCL2PostProcessor) HCL2Prepare(buildVars map[string]interface{}) error 
 	if len(buildVars) > 0 {
 		ectx = p.evalContext.NewChild()
 		buildValues := map[string]cty.Value{}
+		if !p.evalContext.Variables[buildAccessor].IsNull() {
+			buildValues = p.evalContext.Variables[buildAccessor].AsValueMap()
+		}
 		for k, v := range buildVars {
 			val, err := ConvertPluginConfigValueToHCLValue(v)
 			if err != nil {

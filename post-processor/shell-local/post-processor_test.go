@@ -1,7 +1,9 @@
+// Copyright IBM Corp. 2024, 2026
+// SPDX-License-Identifier: BUSL-1.1
+
 package shell_local
 
 import (
-	"io/ioutil"
 	"os"
 	"runtime"
 	"testing"
@@ -92,7 +94,7 @@ func TestPostProcessorPrepare_Script(t *testing.T) {
 	}
 
 	// Test with a good one
-	tf, err := ioutil.TempFile("", "packer")
+	tf, err := os.CreateTemp("", "packer")
 	if err != nil {
 		t.Fatalf("error tempfile: %s", err)
 	}
@@ -137,7 +139,7 @@ func TestPostProcessorPrepare_ExecuteCommand(t *testing.T) {
 	p = new(PostProcessor)
 	p.Configure(raws)
 	if runtime.GOOS != "windows" {
-		expected = []string{"/bin/sh", "-c", "{{.Vars}} {{.Script}}"}
+		expected = []string{"/bin/sh", "-c", "{{.Vars}} /bin/sh -e \"$0\"", "{{.Script}}"}
 	} else {
 		expected = []string{"cmd", "/V", "/C", "{{.Vars}}", "call", "{{.Script}}"}
 	}
@@ -160,7 +162,7 @@ func TestPostProcessorPrepare_ScriptAndInline(t *testing.T) {
 	}
 
 	// Test with both
-	tf, err := ioutil.TempFile("", "packer")
+	tf, err := os.CreateTemp("", "packer")
 	if err != nil {
 		t.Fatalf("error tempfile: %s", err)
 	}
@@ -179,7 +181,7 @@ func TestPostProcessorPrepare_ScriptAndScripts(t *testing.T) {
 	raws := testConfig()
 
 	// Test with both
-	tf, err := ioutil.TempFile("", "packer")
+	tf, err := os.CreateTemp("", "packer")
 	if err != nil {
 		t.Fatalf("error tempfile: %s", err)
 	}
@@ -205,7 +207,7 @@ func TestPostProcessorPrepare_Scripts(t *testing.T) {
 	}
 
 	// Test with a good one
-	tf, err := ioutil.TempFile("", "packer")
+	tf, err := os.CreateTemp("", "packer")
 	if err != nil {
 		t.Fatalf("error tempfile: %s", err)
 	}

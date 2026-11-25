@@ -1,3 +1,6 @@
+// Copyright IBM Corp. 2024, 2026
+// SPDX-License-Identifier: BUSL-1.1
+
 package hcl2template
 
 import (
@@ -22,11 +25,26 @@ const badIdentifierDetail = "A name must start with a letter or underscore and m
 // The "locals" block itself is not represented, because it serves only to
 // provide context for us to interpret its contents.
 type LocalBlock struct {
-	Name string
-	Expr hcl.Expression
+	LocalName string
+	Expr      hcl.Expression
 	// When Sensitive is set to true Packer will try its best to hide/obfuscate
 	// the variable from the output stream. By replacing the text.
 	Sensitive bool
+
+	// dependsOn lists the dependencies for being able to evaluate this local
+	//
+	// Only `local`/`locals` will be referenced here as we execute all the
+	// same component types at once.
+	dependencies []refString
+	// evaluated toggles to true if it has been evaluated.
+	//
+	// We use this to determine if we're ready to get the value of the
+	// expression.
+	evaluated bool
+}
+
+func (l LocalBlock) Name() string {
+	return fmt.Sprintf("local.%s", l.LocalName)
 }
 
 // VariableAssignment represents a way a variable was set: the expression
@@ -59,6 +77,12 @@ type Variable struct {
 	// declaration, the type of the default variable will be used. This will
 	// allow to ensure that users set this variable correctly.
 	Type cty.Type
+	// TypeDefaults holds the default values declared through optional()
+	// attribute modifiers within the variable's type constraint, if any. It is
+	// nil when the type constraint declares no such defaults. These defaults
+	// must be applied to a value before it is converted to Type so that any
+	// omitted optional attributes are populated with their declared defaults.
+	TypeDefaults *typeexpr.Defaults
 	// Common name of the variable
 	Name string
 	// Description of the variable
@@ -158,6 +182,18 @@ func (v *Variable) Value() cty.Value {
 	}
 	val := v.Values[len(v.Values)-1]
 	return val.Value
+}
+
+// applyTypeDefaults applies the default values declared through optional()
+// attribute modifiers in the variable's type constraint. It is a no-op when the
+// type declares no such defaults or when the value is null. Defaults must be
+// applied before converting a value to the variable's type so that omitted
+// optional attributes are populated with their declared defaults.
+func (v *Variable) applyTypeDefaults(val cty.Value) cty.Value {
+	if v.TypeDefaults == nil || val.IsNull() {
+		return val
+	}
+	return v.TypeDefaults.Apply(val)
 }
 
 // ValidateValue tells if the selected value for the Variable is valid according
@@ -275,18 +311,8 @@ var localBlockSchema = &hcl.BodySchema{
 	},
 }
 
-func decodeLocalBlock(block *hcl.Block, locals []*LocalBlock) (*LocalBlock, hcl.Diagnostics) {
+func decodeLocalBlock(block *hcl.Block) (*LocalBlock, hcl.Diagnostics) {
 	name := block.Labels[0]
-	for _, loc := range locals {
-		if loc.Name == name {
-			return nil, []*hcl.Diagnostic{{
-				Severity: hcl.DiagError,
-				Summary:  "Duplicate variable",
-				Detail:   "Duplicate " + block.Labels[0] + " variable definition found.",
-				Context:  block.DefRange.Ptr(),
-			}}
-		}
-	}
 
 	content, diags := block.Body.Content(localBlockSchema)
 	if !hclsyntax.ValidIdentifier(name) {
@@ -299,7 +325,7 @@ func decodeLocalBlock(block *hcl.Block, locals []*LocalBlock) (*LocalBlock, hcl.
 	}
 
 	l := &LocalBlock{
-		Name: name,
+		LocalName: name,
 	}
 
 	if attr, exists := content.Attributes["sensitive"]; exists {
@@ -345,6 +371,7 @@ func (variables *Variables) decodeVariableBlock(block *hcl.Block, ectx *hcl.Eval
 	v := &Variable{
 		Name:  name,
 		Range: block.DefRange,
+		Type:  cty.DynamicPseudoType,
 	}
 
 	if attr, exists := content.Attributes["description"]; exists {
@@ -353,13 +380,14 @@ func (variables *Variables) decodeVariableBlock(block *hcl.Block, ectx *hcl.Eval
 	}
 
 	if t, ok := content.Attributes["type"]; ok {
-		tp, moreDiags := typeexpr.Type(t.Expr)
+		tp, typeDefaults, moreDiags := typeexpr.TypeConstraintWithDefaults(t.Expr)
 		diags = append(diags, moreDiags...)
 		if moreDiags.HasErrors() {
 			return diags
 		}
 
 		v.Type = tp
+		v.TypeDefaults = typeDefaults
 	}
 
 	if attr, exists := content.Attributes["sensitive"]; exists {
@@ -376,6 +404,7 @@ func (variables *Variables) decodeVariableBlock(block *hcl.Block, ectx *hcl.Eval
 
 		if v.Type != cty.NilType {
 			var err error
+			defaultValue = v.applyTypeDefaults(defaultValue)
 			defaultValue, err = convert.Convert(defaultValue, v.Type)
 			if err != nil {
 				diags = append(diags, &hcl.Diagnostic{
@@ -396,7 +425,9 @@ func (variables *Variables) decodeVariableBlock(block *hcl.Block, ectx *hcl.Eval
 
 		// It's possible no type attribute was assigned so lets make sure we
 		// have a valid type otherwise there could be issues parsing the value.
-		if v.Type == cty.NilType {
+		if v.Type == cty.DynamicPseudoType &&
+			!defaultValue.Type().Equals(cty.EmptyObject) &&
+			!defaultValue.Type().Equals(cty.EmptyTuple) {
 			v.Type = defaultValue.Type()
 		}
 	}
@@ -550,7 +581,7 @@ func looksLikeSentences(s string) bool {
 	last := runes[len(runes)-1]
 
 	// If the first rune is a letter then it must be an uppercase letter. To
-	// sorts of nudge people into writting sentences. For alphabets that don't
+	// sort of nudge people into writing sentences. For alphabets that don't
 	// have the notion of 'upper', this does nothing.
 	if unicode.IsLetter(first) && !unicode.IsUpper(first) {
 		return false
@@ -601,6 +632,7 @@ func (cfg *PackerConfig) collectInputVariableValues(env []string, files []*hcl.F
 		diags = append(diags, valDiags...)
 		if variable.Type != cty.NilType {
 			var err error
+			val = variable.applyTypeDefaults(val)
 			val, err = convert.Convert(val, variable.Type)
 			if err != nil {
 				diags = append(diags, &hcl.Diagnostic{
@@ -666,18 +698,21 @@ func (cfg *PackerConfig) collectInputVariableValues(env []string, files []*hcl.F
 		for name, attr := range attrs {
 			variable, found := variables[name]
 			if !found {
-				sev := hcl.DiagWarning
-				if cfg.ValidationOptions.Strict {
-					sev = hcl.DiagError
+				if !cfg.ValidationOptions.WarnOnUndeclaredVar {
+					continue
 				}
+
 				diags = append(diags, &hcl.Diagnostic{
-					Severity: sev,
+					Severity: hcl.DiagWarning,
 					Summary:  "Undefined variable",
-					Detail: fmt.Sprintf("A %q variable was set but was "+
-						"not found in known variables. To declare "+
-						"variable %q, place this block in one of your "+
-						".pkr files, such as variables.pkr.hcl",
-						name, name),
+					Detail: fmt.Sprintf("The variable %[1]q was set but was not declared as an input variable."+
+						"\nTo declare variable %[1]q place this block in one of your .pkr.hcl files, "+
+						"such as variables.pkr.hcl\n\n"+
+						"variable %[1]q {\n"+
+						"  type    = string\n"+
+						"  default = null\n"+
+						"}",
+						name),
 					Context: attr.Range.Ptr(),
 				})
 				continue
@@ -688,6 +723,7 @@ func (cfg *PackerConfig) collectInputVariableValues(env []string, files []*hcl.F
 
 			if variable.Type != cty.NilType {
 				var err error
+				val = variable.applyTypeDefaults(val)
 				val, err = convert.Convert(val, variable.Type)
 				if err != nil {
 					diags = append(diags, &hcl.Diagnostic{
@@ -736,13 +772,13 @@ func (cfg *PackerConfig) collectInputVariableValues(env []string, files []*hcl.F
 
 		if variable.Type != cty.NilType {
 			var err error
+			val = variable.applyTypeDefaults(val)
 			val, err = convert.Convert(val, variable.Type)
 			if err != nil {
 				diags = append(diags, &hcl.Diagnostic{
 					Severity: hcl.DiagError,
 					Summary:  "Invalid argument value for -var variable",
 					Detail:   fmt.Sprintf("The received arg value for %s is not compatible with the variable's type constraint: %s.", name, err),
-					Subject:  expr.Range().Ptr(),
 				})
 				val = cty.DynamicVal
 			}
@@ -762,7 +798,7 @@ func (cfg *PackerConfig) collectInputVariableValues(env []string, files []*hcl.F
 // The specified filename is to identify the source of where value originated from in the diagnostics report, if there is an error.
 func expressionFromVariableDefinition(filename string, value string, variableType cty.Type) (hclsyntax.Expression, hcl.Diagnostics) {
 	switch variableType {
-	case cty.String, cty.Number, cty.NilType:
+	case cty.String, cty.Number, cty.NilType, cty.DynamicPseudoType:
 		// when the type is nil (not set in a variable block) we default to
 		// interpreting everything as a string literal.
 		return &hclsyntax.LiteralValueExpr{Val: cty.StringVal(value)}, nil
