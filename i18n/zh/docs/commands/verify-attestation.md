@@ -1,6 +1,6 @@
 ---
 title: packer verify-attestation 命令参考
-description: `packer verify-attestation` 命令验证签名的 DSSE 证明，并可以执行来源策略检查。
+description: "`packer verify-attestation` 命令验证签名的 DSSE 证明，并可以执行来源策略检查。"
 ---
 
 # `packer verify-attestation` 命令
